@@ -1,0 +1,41 @@
+# Python Executable
+*.pyc
+
+# Python ByteCode
+*.py[co]
+
+# Packaging files
+*.egg*
+
+# Editor temp files
+*.swp
+*~
+
+# SqLite3 database
+*.db
+*.sqlite3
+
+# Log files
+*.log
+
+# conf
+conf/*
+db_reset.sh
+
+# Misc
+media/
+local.py
+.DS_Store
+
+# ignore conf folder
+conf/
+djangocosign/
+feedback/
+
+# ignore static files folders
+htdocs/palmwiz/static/admin/*
+htdocs/palmwiz/fixtures/*
+htdocs/palmwiz/static/epro/*
+htdocs/palmwiz/static/rest_framework/*
+htdocs/palmwiz/static/rest_framework_swagger/*
+virtualenv
