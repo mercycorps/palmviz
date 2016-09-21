@@ -7,10 +7,12 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import TemplateView, View
 
+from django.contrib import messages
+
+from .models import WrikeOauth2Credentials
+
 # Create your views here.
 class WrikeSetup(View):
-
-    _client_secret = '6QOQFsSMaLVlKG9ciMmQIPYjMzrqPlogVLojgVzsEaQww5MJ8bL7sWjgLUWcgIdk'
 
     def get(self, request):
         oauth2_redirect_uri_part_one = reverse_lazy('oauth2redirect')
@@ -40,6 +42,15 @@ class WrikeOauthRedirectURI(View):
         }
         headers = {'Content-Type': 'application/x-www-form-urlencoded'} #{'Content-Type': 'application/json'}
         result = requests.post(self._wrike_token_url, data=data, headers=headers)
-        print(result.text)
-        d = json.loads(result.text)
-        return HttpResponse("%s-%s" % (d['error'], d['error_description']))
+        result_json = json.loads(result.text)
+
+        if result_json.get("error", None) is None:
+            defaults = {
+                "access_token": result_json['access_token'],
+                "refresh_token": result_json['refresh_token'],
+                "token_type": result_json['token_type'],
+            }
+            cred, created = WrikeOauth2Credentials.objects.update_or_create(user=request.user, defaults=defaults)
+        return HttpResponseRedirect('/')
+
+
