@@ -47,6 +47,9 @@ class Contact(BaseModel):
     ctype = models.CharField(max_length=30, null=True, blank=True)
     deleted = models.BooleanField(default=False)
 
+    def __unicode__(self):
+        return "%s %s" % (self.fname, self.lname)
+
 
 
 class Folder(BaseModel):
@@ -55,7 +58,7 @@ class Folder(BaseModel):
     scope = models.CharField(max_length=100, null=True, blank=True)
 
     def __unicode__(self):
-        return title
+        return self.title
 
 
 class Task(BaseModel):
@@ -72,7 +75,7 @@ class Task(BaseModel):
     )
 
     def __unicode__(self):
-        return title
+        return self.title
 
 
 class CustomFieldTask(BaseModel):
@@ -81,7 +84,7 @@ class CustomFieldTask(BaseModel):
     value = models.CharField(max_length=254, null=True, blank=True)
 
     def __unicode__(self):
-        return "%s=%s" % (customfield, value)
+        return "%s=%s" % (self.customfield, self.value)
 
 
 class WrikeOauth2Credentials(BaseModel):
@@ -92,5 +95,5 @@ class WrikeOauth2Credentials(BaseModel):
     last_time_access_token_fetched = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
-        return access_token
+        return self.access_token
 

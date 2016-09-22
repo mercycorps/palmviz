@@ -13,6 +13,13 @@ from .models import WrikeOauth2Credentials
 
 # Create your views here.
 class WrikeOauth2SetupStep1(View):
+    """
+    Forwards the user to Wrike authorization URL to request an authorization code.
+    After clicking on the URL, the user is redirected to the login page
+    (if not already logged in) and then to a consent page to get confirmation approval.
+    The consent page redirects the client to the redirect_uri with the code parameter
+    set to the authorization code.
+    """
 
     def get(self, request):
         oauth2_redirect_uri_part_one = reverse_lazy('oauth2redirect')
@@ -25,7 +32,9 @@ class WrikeOauth2SetupStep1(View):
 
 
 class WrikeOauthRedirectUriStep2(View):
-
+    """
+    Exchange authorization code obtained in Step1 for credentials (access_token and refresh_token)
+    """
     def get(self, request):
         oauth2_redirect_uri_part_one = reverse_lazy('oauth2redirect')
         hostname = request.META['HTTP_HOST']

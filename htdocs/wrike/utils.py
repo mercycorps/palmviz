@@ -8,6 +8,10 @@ from django.utils.timezone import utc
 from .models import WrikeOauth2Credentials
 
 def get_wrike_access_token(user):
+    """
+    If the access token is older than one hour, then fetch a new one since
+    they get expired after one hour.
+    """
     cred = WrikeOauth2Credentials.objects.get_or_none(pk=user.pk)
     if cred:
         now_utc = datetime.datetime.utcnow().replace(tzinfo=utc)
