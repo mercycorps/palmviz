@@ -12,7 +12,7 @@ from django.contrib import messages
 from .models import WrikeOauth2Credentials
 
 # Create your views here.
-class WrikeSetup(View):
+class WrikeOauth2SetupStep1(View):
 
     def get(self, request):
         oauth2_redirect_uri_part_one = reverse_lazy('oauth2redirect')
@@ -24,8 +24,7 @@ class WrikeSetup(View):
 
 
 
-class WrikeOauthRedirectURI(View):
-    _wrike_token_url = "https://www.wrike.com/oauth2/token"
+class WrikeOauthRedirectUriStep2(View):
 
     def get(self, request):
         oauth2_redirect_uri_part_one = reverse_lazy('oauth2redirect')
@@ -41,7 +40,7 @@ class WrikeOauthRedirectURI(View):
             "redirect_uri": oauth2_redirect_uri,
         }
         headers = {'Content-Type': 'application/x-www-form-urlencoded'} #{'Content-Type': 'application/json'}
-        result = requests.post(self._wrike_token_url, data=data, headers=headers)
+        result = requests.post(settings.WRIKE_ACCESS_TOKEN_URL, data=data, headers=headers)
         result_json = json.loads(result.text)
 
         if result_json.get("error", None) is None:
@@ -51,6 +50,8 @@ class WrikeOauthRedirectURI(View):
                 "token_type": result_json['token_type'],
             }
             cred, created = WrikeOauth2Credentials.objects.update_or_create(user=request.user, defaults=defaults)
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse_lazy('home'))
+
+
 
 
