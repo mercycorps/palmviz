@@ -11,7 +11,10 @@ from django.contrib import messages
 
 from .models import WrikeOauth2Credentials
 
-# Create your views here.
+class HomeView(TemplateView):
+    template_name = 'wrike/home.html'
+
+
 class WrikeOauth2SetupStep1(View):
     """
     Forwards the user to Wrike authorization URL to request an authorization code.
