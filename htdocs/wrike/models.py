@@ -33,7 +33,8 @@ class BaseModel(models.Model):
 class CustomField(BaseModel):
     id = models.CharField(max_length=100, primary_key=True)
     title = models.CharField(max_length=254, null=True, blank=True)
-    ctype = models.CharField(max_length=30, null=True, blank=True)
+    type = models.CharField(max_length=30, null=True, blank=True)
+    deleted = models.BooleanField(default=False)
 
 
     def __unicode__(self):
@@ -42,13 +43,13 @@ class CustomField(BaseModel):
 
 class Contact(BaseModel):
     id = models.CharField(max_length=100, primary_key=True)
-    fname = models.CharField(max_length=100, null=True, blank=True)
-    lname = models.CharField(max_length=100, null=True, blank=True)
-    ctype = models.CharField(max_length=30, null=True, blank=True)
+    firstName = models.CharField(max_length=100, null=True, blank=True)
+    lastName = models.CharField(max_length=100, null=True, blank=True)
+    type = models.CharField(max_length=30, null=True, blank=True)
     deleted = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return "%s %s" % (self.fname, self.lname)
+        return "%s %s" % (self.firstName, self.lastName)
 
 
 
