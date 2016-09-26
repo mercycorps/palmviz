@@ -26,7 +26,7 @@ class BaseModel(models.Model):
     """
     Abstract class that overrides the default django manager to include a new method called get_or_none
     """
-    created = models.DateTimeField(editable=False, auto_now=False, auto_now_add=False)
+    created = models.DateTimeField(editable=False, auto_now=False, auto_now_add=True)
     updated = models.DateTimeField(editable=False, blank=True, null=True)
     objects = BaseManager()
 
@@ -35,10 +35,8 @@ class BaseModel(models.Model):
 
     def save(self, *args, **kwargs):
         now_utc = datetime.datetime.utcnow().replace(tzinfo=utc)
-        if self.id:
+        if self.created:
             self.updated = now_utc
-        else:
-            self.created = now_utc
         super(BaseModel, self).save(*args, **kwargs)
 
 

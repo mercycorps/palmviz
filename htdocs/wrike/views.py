@@ -1,5 +1,7 @@
 import requests
 import json
+import logging
+
 from django.core.urlresolvers import reverse_lazy
 from django.conf import settings
 
@@ -10,6 +12,8 @@ from django.views.generic import TemplateView, View
 from django.contrib import messages
 
 from .models import WrikeOauth2Credentials
+
+logger = logging.getLogger(__name__)
 
 class HomeView(TemplateView):
     template_name = 'wrike/home.html'
@@ -62,6 +66,7 @@ class WrikeOauthRedirectUriStep2(View):
                 "token_type": result_json['token_type'],
             }
             cred, created = WrikeOauth2Credentials.objects.update_or_create(user=request.user, defaults=defaults)
+            logger.warn("WrikeOauth2Credentials object is creatd. right? %s" % created)
         return HttpResponseRedirect(reverse_lazy('home'))
 
 
