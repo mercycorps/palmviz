@@ -12,7 +12,7 @@ from django.utils.encoding import smart_text
 
 from django.contrib.auth.models import User
 
-from .models import WrikeOauth2Credentials, CustomField
+from .models import WrikeOauth2Credentials, CustomField, Contact
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +58,13 @@ def get_model_fields_names(model_name):
 
 def process_wrike_custom_fields():
     """
-    Fetches custom_fields from Wrike for Mercy Corps account and stores them.
+    Fetches custom_fields from Wrike's Mercy Corps account and stores them.
     """
     try:
         access_token = get_wrike_access_token()
         headers = {"Authorization": "bearer %s" % access_token}
         custom_fields = requests.get(settings.WRIKE_CUSTOMFIELDS_API_URL, headers=headers)
         custom_fields_json = json.loads(custom_fields.text)
-        logger.error("Test message. Fake error message")
     except Exception as e:
         logger.error(e)
         return False
@@ -83,3 +82,31 @@ def process_wrike_custom_fields():
             logger.error(e)
             return False
     return True
+
+
+def process_wrike_contacts():
+    """
+    Fetches contacts(users) from Wrike's Mercy Corps account and stores them.
+    """
+    try:
+        access_token = get_wrike_access_token()
+        headers = {"Authorization": "bearer %s" % access_token}
+        contacts = requests.get(settings.WRIKE_CONTACT_API_URL, headers=headers)
+        contacts_json = json.loads(contacts.text)
+    except Exception as e:
+        logger.error(e)
+        return False
+
+    db_col_names = get_model_fields_names('Contact')
+    data = contacts_json['data']
+    for row in data:
+        db_row = {}
+        for col,val in row.iteritems():
+            if col in db_col_names: db_row[col] = smart_text(val)
+        try:
+            field, created = Contact.objects.update_or_create(id=row['id'], defaults=db_row)
+        except Exception as e:
+            logger.error(e)
+            return False
+    return True
+
