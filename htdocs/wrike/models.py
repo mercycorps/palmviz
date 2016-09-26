@@ -1,8 +1,13 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
+import datetime, time
 
 from django.db import models
+
+from django.utils import timezone
+from django.utils.timezone import utc
+
+from django.contrib.auth.models import User
 
 
 class BaseManager(models.Manager):
@@ -21,15 +26,23 @@ class BaseModel(models.Model):
     """
     Abstract class that overrides the default django manager to include a new method called get_or_none
     """
-    created = models.DateTimeField(auto_now=False, auto_now_add=True)
+    created = models.DateTimeField(editable=False, auto_now=False, auto_now_add=False)
+    updated = models.DateTimeField(editable=False, blank=True, null=True)
     objects = BaseManager()
 
     class Meta:
         abstract = True
 
+    def save(self, *args, **kwargs):
+        now_utc = datetime.datetime.utcnow().replace(tzinfo=utc)
+        if self.id:
+            self.updated = now_utc
+        else:
+            self.created = now_utc
+        super(BaseModel, self).save(*args, **kwargs)
 
 
-# Create your models here.
+
 class CustomField(BaseModel):
     id = models.CharField(max_length=100, primary_key=True)
     title = models.CharField(max_length=254, null=True, blank=True)
@@ -38,6 +51,9 @@ class CustomField(BaseModel):
 
 
     def __unicode__(self):
+        return title
+
+    def __str__(self):
         return title
 
 
@@ -51,6 +67,8 @@ class Contact(BaseModel):
     def __unicode__(self):
         return "%s %s" % (self.firstName, self.lastName)
 
+    def __str__(self):
+        return "%s %s" % (self.firstName, self.lastName)
 
 
 class Folder(BaseModel):
@@ -60,6 +78,10 @@ class Folder(BaseModel):
 
     def __unicode__(self):
         return self.title
+
+    def __str__(self):
+        return self.title
+
 
 
 class Task(BaseModel):
@@ -78,6 +100,9 @@ class Task(BaseModel):
     def __unicode__(self):
         return self.title
 
+    def __str__(self):
+        return self.title
+
 
 class CustomFieldTask(BaseModel):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
@@ -86,6 +111,10 @@ class CustomFieldTask(BaseModel):
 
     def __unicode__(self):
         return "%s=%s" % (self.customfield, self.value)
+
+    def __str__(self):
+        return "%s=%s" % (self.customfield, self.value)
+
 
 
 class WrikeOauth2Credentials(BaseModel):
@@ -97,4 +126,8 @@ class WrikeOauth2Credentials(BaseModel):
 
     def __unicode__(self):
         return self.access_token
+
+    def __str__(self):
+        return self.access_token
+
 
