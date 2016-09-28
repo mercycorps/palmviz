@@ -129,6 +129,7 @@ STATICFILES_DIRS = (
 
 STATIC_URL = '/static/'
 
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
 # formatting options reference: https://docs.python.org/2/library/logging.html#formatter-objects
 LOGGING = {
@@ -179,3 +180,4 @@ LOGGING = {
         },
     },
 }
+
