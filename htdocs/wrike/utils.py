@@ -59,6 +59,12 @@ def get_model_fields_names(model_name):
     return col_names
 
 
+def process_wrike_data():
+    process_wrike_custom_fields()
+    process_wrike_contacts()
+    process_wrike_folders()
+    process_wrike_tasks()
+
 
 def process_wrike_custom_fields():
     """
@@ -184,16 +190,16 @@ def process_wrike_tasks():
     for row in data:
         db_row = {}
         customfields = None
-        parent_ids = None
-        responsible_ids = None
+        parentIds = None
+        responsibleIds = None
 
         for col, val in row.iteritems():
             if col == "customFields":
                 customfields = val
             elif col == "parentIds":
-                parent_ids = val
+                parentIds = val
             elif col == "responsibleIds":
-                responsible_ids = val
+                responsibleIds = val
             elif col == "createdDate" or col == "updatedDate" or col == "completedDate":
                 try:
                     timestamp = datetime.datetime.strptime(val[:19], "%Y-%m-%dT%H:%M:%S")
@@ -202,6 +208,8 @@ def process_wrike_tasks():
                 except Exception as e:
                     logger.error(e)
                     continue
+            elif col == "briefDescription":
+                db_row[col] = smart_text("%s..." % val[:250])
             else:
                 if col in db_col_names: db_row[col] = smart_text(val)
 
@@ -217,7 +225,7 @@ def process_wrike_tasks():
                 continue
 
         # Associate task with folders (parents)
-        for pid in parent_ids:
+        for pid in parentIds:
             try:
                 folder = Folder.objects.get(pk=pid)
                 task.folders.add(folder)
@@ -226,10 +234,10 @@ def process_wrike_tasks():
                 continue
 
         # Associate task with contacts, i.e. those who are responsible for it.
-        for rid in responsible_ids:
+        for rid in responsibleIds:
             try:
-                contact = Contact.objects.get(pk=rid)
-                task.responsible_ids.add(contact)
+                assignee = Contact.objects.get(pk=rid)
+                task.assignees.add(assignee)
             except Exception as e:
                 logger.error(e)
                 continue
