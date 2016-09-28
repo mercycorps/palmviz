@@ -131,6 +131,10 @@ STATIC_URL = '/static/'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
+# Email setup
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
+
 # formatting options reference: https://docs.python.org/2/library/logging.html#formatter-objects
 LOGGING = {
     'version': 1,

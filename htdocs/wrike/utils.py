@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from .models import WrikeOauth2Credentials, CustomField, Contact, Folder, Task, CustomFieldTask
 
 logger = logging.getLogger(__name__)
+mail_logger = logging.getLogger('app_admins')
 
 def get_wrike_access_token():
     """
@@ -60,10 +61,17 @@ def get_model_fields_names(model_name):
 
 
 def process_wrike_data():
-    process_wrike_custom_fields()
-    process_wrike_contacts()
-    process_wrike_folders()
-    process_wrike_tasks()
+    if process_wrike_custom_fields() == False:
+        mail_logger.error("notifiy adming")
+
+    if process_wrike_contacts() == False:
+        mail_logger.error("notify admins")
+
+    if process_wrike_folders() == False:
+        mail_logger.error("notify admins")
+
+    if process_wrike_tasks() == False:
+        mail_logger.error("notify admins")
 
 
 def process_wrike_custom_fields():
