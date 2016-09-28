@@ -195,25 +195,40 @@ def process_wrike_tasks():
             elif col == "responsibleIds":
                 responsible_ids = val
             elif col == "createdDate" or col == "updatedDate" or col == "completedDate":
-                timestamp = datetime.datetime.strptime(val[:19], "%Y-%m-%dT%H:%M:%S")
-                timestamp = timestamp.replace(tzinfo=pytz.UTC)
-                db_row[col] = timestamp
+                try:
+                    timestamp = datetime.datetime.strptime(val[:19], "%Y-%m-%dT%H:%M:%S")
+                    timestamp = timestamp.replace(tzinfo=pytz.UTC)
+                    db_row[col] = timestamp
+                except Exception as e:
+                    logger.error(e)
+                    continue
             else:
                 if col in db_col_names: db_row[col] = smart_text(val)
 
         task, created = Task.objects.update_or_create(id=row['id'], defaults=db_row)
         for field in customfields:
-            customfield = CustomField.objects.get(pk=field['id'])
-            cft, created = CustomFieldTask.objects.update_or_create(task=task, customfield=customfield, defaults={'value': smart_text(field['value'])})
+            try:
+                customfield = CustomField.objects.get(pk=field['id'])
+                qcft, created = CustomFieldTask.objects.update_or_create(task=task, customfield=customfield, defaults={'value': smart_text(field['value'])})
+            except Exception as e:
+                logger.error(e)
+                continue
 
         for pid in parent_ids:
-            folder = Folder.objects.get(pk=pid)
-            task.folders.add(folder)
+            try:
+                folder = Folder.objects.get(pk=pid)
+                task.folders.add(folder)
+            except Exception as e:
+                logger.error(e)
+                continue
 
         for rid in responsible_ids:
-            contact = Contact.objects.get(pk=rid)
-            task.responsible_ids.add(contact)
-
+            try:
+                contact = Contact.objects.get(pk=rid)
+                task.responsible_ids.add(contact)
+            except Exception as e:
+                logger.error(e)
+                continue
     return True
 
 
