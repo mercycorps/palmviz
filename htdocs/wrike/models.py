@@ -87,6 +87,11 @@ class Task(BaseModel):
     title = models.CharField(max_length=254, null=True, blank=True)
     status = models.CharField(max_length=100, null=True, blank=True)
     brief_description = models.CharField(max_length=254, null=True, blank=True)
+    importance = models.CharField(max_length=100, null=True, blank=True)
+    link = models.URLField(max_length=200, null=True, blank=True)
+    createdDate = models.DateTimeField(blank=True, null=True)
+    updatedDate = models.DateTimeField(blank=True, null=True)
+    completedDate = models.DateTimeField(blank=True, null=True)
     responsible_ids = models.ManyToManyField(Contact, related_name="tasks")
     folders = models.ManyToManyField(Folder, related_name="tasks")
     customfields = models.ManyToManyField(
