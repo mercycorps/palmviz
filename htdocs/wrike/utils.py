@@ -206,6 +206,8 @@ def process_wrike_tasks():
                 if col in db_col_names: db_row[col] = smart_text(val)
 
         task, created = Task.objects.update_or_create(id=row['id'], defaults=db_row)
+
+        # Associate task with custom_fields and its values
         for field in customfields:
             try:
                 customfield = CustomField.objects.get(pk=field['id'])
@@ -214,6 +216,7 @@ def process_wrike_tasks():
                 logger.error(e)
                 continue
 
+        # Associate task with folders (parents)
         for pid in parent_ids:
             try:
                 folder = Folder.objects.get(pk=pid)
@@ -222,6 +225,7 @@ def process_wrike_tasks():
                 logger.error(e)
                 continue
 
+        # Associate task with contacts, i.e. those who are responsible for it.
         for rid in responsible_ids:
             try:
                 contact = Contact.objects.get(pk=rid)
