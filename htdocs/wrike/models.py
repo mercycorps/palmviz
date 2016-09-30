@@ -49,10 +49,10 @@ class CustomField(BaseModel):
 
 
     def __unicode__(self):
-        return title
+        return self.title
 
     def __str__(self):
-        return title
+        return self.title
 
 
 class Contact(BaseModel):
@@ -73,6 +73,10 @@ class Folder(BaseModel):
     id = models.CharField(max_length=100, primary_key=True)
     title = models.CharField(max_length=254, null=True, blank=True)
     scope = models.CharField(max_length=100, null=True, blank=True)
+    # status is only available for projects not for folders
+    status = models.CharField(max_length=20, null=True, blank=True)
+    # createdDate is only available for projects not for folders
+    createdDate = models.DateTimeField(blank=True, null=True)
 
     def __unicode__(self):
         return self.title

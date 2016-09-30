@@ -19,6 +19,46 @@ class HomeView(TemplateView):
     template_name = 'wrike/home.html'
 
 
+
+def get_palm_general_tech_support_data():
+    filters = {
+        "customfield__pk": settings.WRIKE_PALM_REGION_CUSTOM_FIELD_ID,
+        "task__folders__id": settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID
+        }
+    cft = CustomFieldTask.objects.filter(**filters)\
+            .distinct()\
+            .values('value')\
+            .annotate(region=F('value'), num_tasks=Count('task'))\
+            .values('region', 'num_tasks')\
+            .order_by('region')
+
+    return cft
+
+
+def get_palm_recruiting_data():
+    filters = {
+        "customfield__pk": settings.WRIKE_PALM_REGION_CUSTOM_FIELD_ID,
+        "task__folders__id": settings.WRIKE_PALM_RECRUITING_FOLDER_ID
+    }
+    cft = CustomFieldTask.objects.filter(**filters)\
+            .distinct()\
+            .values('value')\
+            .annotate(region=F('value'), num_tasks=Count('task'))\
+            .values('region', 'num_tasks')\
+            .order_by('region')
+    """
+    from wrike.utils import *
+    >>> process_wrike_data()
+    >>> access_token = get_wrike_access_token()
+    >>> headers = {"Authorization": "bearer %s" % access_token}
+    >>> url = 'https://www.wrike.com/api/v3/folders/IEAAAJLHI4CEIUMR/folders'
+    >>> folders = requests.get(url, headers=headers)
+    """
+    return cft
+
+
+
+
 class WrikeOauth2SetupStep1(View):
     """
     Forwards the user to Wrike authorization URL to request an authorization code.

@@ -164,6 +164,11 @@ def process_wrike_folders():
     for row in data:
         db_row = {}
         for col,val in row.iteritems():
+            if col == "project":
+                db_row["status"] = smart_text(val['status'])
+                timestamp = datetime.datetime.strptime(val['createdDate'][:19], "%Y-%m-%dT%H:%M:%S")
+                timestamp = timestamp.replace(tzinfo=pytz.UTC)
+                db_row["createdDate"] = timestamp
             if col in db_col_names: db_row[col] = smart_text(val)
         try:
             folder, created = Folder.objects.update_or_create(id=row['id'], defaults=db_row)
