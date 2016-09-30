@@ -174,26 +174,37 @@ def process_wrike_folders():
 
 
 
+
 def process_wrike_tasks():
     """
-    Fetches tasks and its associations with folders, customfields, and contacts.
+    Fetch tasks from wrike's api.
     """
+    access_token = get_wrike_access_token()
+    headers = {"Authorization": "bearer %s" % access_token}
+    tasks = requests.get(settings.WRIKE_TASK_API_URL, headers=headers)
+    tasks_json = tasks.json()
+    nextPageToken = tasks_json.get('nextPageToken', None)
+    process_wrike_tasks_helper(tasks_json.get('data', None))
     try:
-        access_token = get_wrike_access_token()
-        headers = {"Authorization": "bearer %s" % access_token}
-        tasks = requests.get(settings.WRIKE_TASK_API_URL, headers=headers)
-        tasks_json = json.loads(tasks.text)
+        while True:
+            # Wrike limits # of returned tasks to 1000. So I need to pagingate
+            tasks = requests.get("%s&%s=%s" % (settings.WRIKE_TASK_API_URL, "nextPageToken", nextPageToken), headers=headers)
+            tasks_json = tasks.json()
+            data = tasks_json.get('data', None)
+            process_wrike_tasks_helper(data)
+            nextPageToken = tasks_json.get('nextPageToken', None)
+            if nextPageToken == None:
+                break
     except Exception as e:
         logger.error(e)
         return False
+    return True
 
+def process_wrike_tasks_helper(data):
+    """
+    A helper method for processing wrike's tasks and saving them into database
+    """
     db_col_names = get_model_fields_names('Task')
-
-    try:
-        data = tasks_json['data']
-    except Exception as e:
-        logger.error(e)
-        return False
 
     for row in data:
         db_row = {}
@@ -216,7 +227,7 @@ def process_wrike_tasks():
                 except Exception as e:
                     logger.error(e)
                     continue
-            elif col == "briefDescription":
+            elif col == "briefDescription" or col == "title":
                 db_row[col] = smart_text("%s..." % val[:250])
             else:
                 if col in db_col_names: db_row[col] = smart_text(val)
