@@ -73,6 +73,7 @@ class Folder(BaseModel):
     id = models.CharField(max_length=100, primary_key=True)
     title = models.CharField(max_length=254, null=True, blank=True)
     scope = models.CharField(max_length=100, null=True, blank=True)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name="subfolders")
     # status is only available for projects not for folders
     status = models.CharField(max_length=20, null=True, blank=True)
     # createdDate is only available for projects not for folders
@@ -83,7 +84,6 @@ class Folder(BaseModel):
 
     def __str__(self):
         return self.title
-
 
 
 class Task(BaseModel):

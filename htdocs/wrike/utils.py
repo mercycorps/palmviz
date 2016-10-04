@@ -161,20 +161,40 @@ def process_wrike_folders():
         logger.error(e)
         return False
 
+    child_id_mapping = []
     for row in data:
         db_row = {}
+
         for col,val in row.iteritems():
             if col == "project":
                 db_row["status"] = smart_text(val['status'])
                 timestamp = datetime.datetime.strptime(val['createdDate'][:19], "%Y-%m-%dT%H:%M:%S")
                 timestamp = timestamp.replace(tzinfo=pytz.UTC)
                 db_row["createdDate"] = timestamp
+            elif col == "childIds":
+                child_id_mapping.append({"id": row['id'], "childIds": val})
             if col in db_col_names: db_row[col] = smart_text(val)
+
         try:
             folder, created = Folder.objects.update_or_create(id=row['id'], defaults=db_row)
         except Exception as e:
             logger.error(e)
             return False
+
+    for mapping in child_id_mapping:
+        try:
+            parent_folder = Folder.objects.get(pk=mapping.get("id"))
+            childIds = mapping.get("childIds")
+            #print("pid=%s, childIds:%s" % (parent_folder.pk, childIds))
+            for childId in childIds:
+                child_folder = Folder.objects.get(pk=childId)
+                #print("pid=%s cid=%s" %(parent_folder.pk, child_folder.pk))
+                parent_folder.subfolders.add(child_folder)
+        except Exception as e:
+            logger.error("no such forlder")
+            logger.error(e)
+            continue
+
     return True
 
 
