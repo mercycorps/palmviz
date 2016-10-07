@@ -73,17 +73,36 @@ class Folder(BaseModel):
     id = models.CharField(max_length=100, primary_key=True)
     title = models.CharField(max_length=254, null=True, blank=True)
     scope = models.CharField(max_length=100, null=True, blank=True)
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name="subfolders")
+    permalink = models.URLField(max_length=254, null=True, blank=True)
+    parents = models.ManyToManyField('self', null=True, blank=True, related_name="subfolders")
     # status is only available for projects not for folders
     status = models.CharField(max_length=20, null=True, blank=True)
     # createdDate is only available for projects not for folders
     createdDate = models.DateTimeField(blank=True, null=True)
+    customfields = models.ManyToManyField(
+        CustomField,
+        through = 'CustomFieldFolder',
+        through_fields = ('folder', 'customfield')
+    )
 
     def __unicode__(self):
         return self.title
 
     def __str__(self):
         return self.title
+
+
+class CustomFieldFolder(BaseModel):
+    folder = models.ForeignKey(Folder, on_delete=models.CASCADE)
+    customfield = models.ForeignKey(CustomField, on_delete=models.CASCADE)
+    value = models.CharField(max_length=254, null=True, blank=True)
+
+    def __unicode__(self):
+        return "%s=%s" % (self.customfield, self.value)
+
+    def __str__(self):
+        return "%s=%s" % (self.customfield, self.value)
+
 
 
 class Task(BaseModel):
