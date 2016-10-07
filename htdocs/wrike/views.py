@@ -37,10 +37,10 @@ def get_palm_general_tech_support_data():
 
 def get_palm_recruiting_data():
     filters = {
-        "customfield__pk": settings.WRIKE_PALM_REGION_CUSTOM_FIELD_ID,
-        "task__folders__id": settings.WRIKE_PALM_RECRUITING_FOLDER_ID
+        "parents__id": settings.WRIKE_PALM_RECRUITING_FOLDER_ID,
+        "status__isnull": False
     }
-    cft = CustomFieldTask.objects.filter(**filters)\
+    cft = Folder.objects.filter(**filters)\
             .distinct()\
             .values('value')\
             .annotate(region=F('value'), num_tasks=Count('task'))\
@@ -53,6 +53,10 @@ def get_palm_recruiting_data():
     >>> headers = {"Authorization": "bearer %s" % access_token}
     >>> url = 'https://www.wrike.com/api/v3/folders/IEAAAJLHI4CEIUMR/folders'
     >>> folders = requests.get(url, headers=headers)
+    subfolders = Folder.objects.filter(parents__id='IEAAAJLHI4CAUMYT', status__isnull=False)
+    subfolders = Folder.objects.filter(parents__id='IEAAAJLHI4CEIUMR', status__isnull=False).filter(parents__id='IEAAAJLHI4CAUMYT')
+    url = 'https://www.wrike.com/api/v3/folders/IEAAAJLHI4CEIUMR/folders?customField={"id":"IEAAAJLHJUAACCIV","value":"West, Central %26 North Africa"}'
+
     """
     return cft
 

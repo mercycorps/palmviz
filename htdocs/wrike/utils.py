@@ -13,7 +13,7 @@ from django.utils.encoding import smart_text
 
 from django.contrib.auth.models import User
 
-from .models import WrikeOauth2Credentials, CustomField, Contact, Folder, Task, CustomFieldTask
+from .models import WrikeOauth2Credentials, CustomField, Contact, Folder, Task, CustomFieldTask, CustomFieldFolder
 
 logger = logging.getLogger(__name__)
 mail_logger = logging.getLogger('app_admins')
@@ -68,7 +68,7 @@ def process_wrike_data():
         mail_logger.error("notify admins")
 
     if process_wrike_folders() == False:
-        mail_logger.error("notify admins")
+        mail_logger.error("notifiy admins")
 
     if process_wrike_tasks() == False:
         mail_logger.error("notify admins")
@@ -140,30 +140,60 @@ def process_wrike_contacts():
     return True
 
 
+
 def process_wrike_folders():
     """
-    Fetches Folder(Projects) from Wrike's Mercy Corps account and stores them.
+    Fetches Wrike Folders and Projects.
     """
+    success = True
+
+    # First, get a list of all folders and projects to make sure in subsequent calls
+    # we don't run into parentIds that have not yet been created. This call does not
+    # retrieve parentIds or customFields because Wrike does not include these two attributes
+    # in API calls that query all folders/projects under an Account ID
     try:
         access_token = get_wrike_access_token()
         headers = {"Authorization": "bearer %s" % access_token}
-        folders = requests.get(settings.WRIKE_FOLDER_API_URL, headers=headers)
-        folders_json = json.loads(folders.text)
+        all_folders = requests.get(settings.WRIKE_FOLDER_AND_PROJECTS_API_URL, headers=headers)
+        all_folders_json = json.loads(all_folders.text)
     except Exception as e:
         logger.error(e)
         return False
 
-    db_col_names = get_model_fields_names('Folder')
+    success = process_wrike_folder_and_projects_helper(all_folders_json['data'])
+    if success == False: return success
 
     try:
-        data = folders_json['data']
+        # Second, fetch all projects from Wrike; this call includes parentIds, which should
+        # already be created in the first step above. It also includes customFields, if any.
+        projects = requests.get(settings.WRIKE_PROJECT_API_URL, headers=headers)
+        projects_json = json.loads(projects.text)
+
+        # Third, fetch all folders from Wrike; this call includes parentIds, which should
+        # already be created in the first step above. It also includes customFields, if any.
+        folders = requests.get(settings.WRIKE_FOLDER_API_URL, headers=headers)
+        folders_json = json.loads(folders.text)
+
+        # Finally, combine the two lists from projects and folders together and store
+        # them in the folders table.
+        data = projects_json['data'] + folders_json['data']
     except Exception as e:
         logger.error(e)
         return False
+    success = process_wrike_folder_and_projects_helper(data)
+    return success
 
-    child_id_mapping = []
+
+def process_wrike_folder_and_projects_helper(data):
+    """
+    This is a helper method to process wrike's folder and project data in db.
+    """
+    db_col_names = get_model_fields_names('Folder')
+
+    parents_mapping = []
     for row in data:
         db_row = {}
+        customfields = None
 
         for col,val in row.iteritems():
             if col == "project":
@@ -171,8 +201,10 @@ def process_wrike_folders():
                 timestamp = datetime.datetime.strptime(val['createdDate'][:19], "%Y-%m-%dT%H:%M:%S")
                 timestamp = timestamp.replace(tzinfo=pytz.UTC)
                 db_row["createdDate"] = timestamp
-            elif col == "childIds":
-                child_id_mapping.append({"id": row['id'], "childIds": val})
+            elif col == "parentIds":
+                parents_mapping.append({"id":row['id'], "parentIds": val})
+            elif col == "customFields":
+                customfields = val
             if col in db_col_names: db_row[col] = smart_text(val)
 
         try:
@@ -181,19 +213,28 @@ def process_wrike_folders():
             logger.error(e)
             return False
 
-    for mapping in child_id_mapping:
-        try:
-            parent_folder = Folder.objects.get(pk=mapping.get("id"))
-            childIds = mapping.get("childIds")
-            #print("pid=%s, childIds:%s" % (parent_folder.pk, childIds))
-            for childId in childIds:
-                child_folder = Folder.objects.get(pk=childId)
-                #print("pid=%s cid=%s" %(parent_folder.pk, child_folder.pk))
-                parent_folder.subfolders.add(child_folder)
-        except Exception as e:
-            logger.error("no such forlder")
-            logger.error(e)
-            continue
+        # Associate task with custom_fields and its values
+        for field in customfields or []:
+            val = smart_text(field['value'])
+            if val is None or val == "":
+                continue
+            try:
+                customfield = CustomField.objects.get(pk=field['id'])
+                cff, created = CustomFieldFolder.objects.update_or_create(folder=folder, customfield=customfield, defaults={'value': val})
+            except Exception as e:
+                logger.error(e)
+                continue
+
+    for mapping in parents_mapping:
+        folder = Folder.objects.get(pk=mapping.get("id"))
+        parentIds = mapping.get("parentIds")
+        for pid in parentIds:
+            try:
+                parent = Folder.objects.get(pk=pid)
+                folder.parents.add(parent)
+            except Exception as e:
+                logger.warn("%s: %s" % (pid, e))
+                continue
 
     return True
 
@@ -261,9 +302,12 @@ def process_wrike_tasks_helper(data):
 
         # Associate task with custom_fields and its values
         for field in customfields:
+            val = smart_text(field['value'])
+            if val is None or val == "":
+                continue
             try:
                 customfield = CustomField.objects.get(pk=field['id'])
-                qcft, created = CustomFieldTask.objects.update_or_create(task=task, customfield=customfield, defaults={'value': smart_text(field['value'])})
+                cft, created = CustomFieldTask.objects.update_or_create(task=task, customfield=customfield, defaults={'value': val})
             except Exception as e:
                 logger.error(e)
                 continue
@@ -274,7 +318,7 @@ def process_wrike_tasks_helper(data):
                 folder = Folder.objects.get(pk=pid)
                 task.folders.add(folder)
             except Exception as e:
-                logger.error(e)
+                logger.error("parentID=%s: %s" % (pid, e))
                 continue
 
         # Associate task with contacts, i.e. those who are responsible for it.
