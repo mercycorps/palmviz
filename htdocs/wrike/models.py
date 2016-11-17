@@ -74,7 +74,7 @@ class Folder(BaseModel):
     title = models.CharField(max_length=254, null=True, blank=True)
     scope = models.CharField(max_length=100, null=True, blank=True)
     permalink = models.URLField(max_length=254, null=True, blank=True)
-    parents = models.ManyToManyField('self', null=True, blank=True, related_name="subfolders")
+    parents = models.ManyToManyField('self', null=True, blank=True, symmetrical=False, related_name="subfolders")
     # status is only available for projects not for folders
     status = models.CharField(max_length=20, null=True, blank=True)
     # createdDate is only available for projects not for folders

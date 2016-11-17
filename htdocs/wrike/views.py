@@ -5,6 +5,8 @@ import logging
 from django.core.urlresolvers import reverse_lazy
 from django.conf import settings
 
+from django.db.models import Count, F, FloatField, Sum
+
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import TemplateView, View
@@ -18,6 +20,22 @@ logger = logging.getLogger(__name__)
 class HomeView(TemplateView):
     template_name = 'wrike/home.html'
 
+
+def get_palm_general_tech_support_by_countries():
+    """
+    Returns number of tasks by country in the PALM General Tech Support folder.
+    """
+    filters = {
+        "tasks__folders__id": settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID
+    }
+    tasks_by_country = Folder.objects.get(pk=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).subfolders\
+                        .filter(tasks__folders__id=settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID)\
+                        .distinct()\
+                        .annotate(Country=F('title'), Num_Tasks=Count('tasks'))\
+                        .values('Country', 'Num_Tasks')\
+                        .order_by('Country')
+
+    return tasks_by_country
 
 
 def get_palm_general_tech_support_data():
