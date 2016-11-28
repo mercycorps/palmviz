@@ -28,6 +28,7 @@ class HomeView(TemplateView):
         recruitments = get_palm_recruiting_data()
         material_aid_projects = get_material_aid_data()
         tdy_projects = get_short_term_tdy_data()
+        agency_response_projects = get_agency_response_data()
 
         data = {}
         countries_in_gen_tech = []
@@ -65,6 +66,14 @@ class HomeView(TemplateView):
                     data[country] = {"tdy": num_tdy_projects}
 
 
+            num_agency_response_projects = agency_response_projects.filter(parents=c).count()
+            if country in countries_in_gen_tech:
+                data[country]["agency_response"] = num_agency_response_projects
+            else:
+                if num_agency_response_projects > 0:
+                    countries_in_gen_tech.append(country)
+                    data[country] = {"agency_response": num_agency_response_projects}
+
         sorted_data = sorted(data.items(), key=operator.itemgetter(0))
         categories = []
 
@@ -72,6 +81,7 @@ class HomeView(TemplateView):
         recs = []
         material_aid = []
         tdys = []
+        agency_responses = []
         for bar in sorted_data:
             country = bar[0]
             categories.append(country)
@@ -79,14 +89,16 @@ class HomeView(TemplateView):
             #print(bar)
             gen_tech.append(wrike_categories.get("gen_tech", "0"))
             recs.append(wrike_categories.get("recruitment", "0"))
-            material_aid.append(wrike_categories.get("material_aid", 0))
-            tdys.append(wrike_categories.get("tdy", 0))
+            material_aid.append(wrike_categories.get("material_aid", "0"))
+            tdys.append(wrike_categories.get("tdy", "0"))
+            agency_responses.append(wrike_categories.get("agency_response", "0"))
 
         series = [
             {"name": "General Tech Support", "data": gen_tech},
             {"name": "Recruitments", "data": recs},
             {"name": "Material Aid", "data": material_aid},
-            {"name": "Short-term TDYs", "data": tdys}
+            {"name": "Short-term TDYs", "data": tdys},
+            {"name": "Agency Responses", "data": agency_responses}
         ]
         context['categories'] = json.dumps(categories)
         context['data'] = json.dumps(series)
