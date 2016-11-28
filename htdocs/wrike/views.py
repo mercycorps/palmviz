@@ -26,6 +26,8 @@ class HomeView(TemplateView):
         gen_tech_tasks = get_palm_general_tech_support_by_countries()
         countries = get_countries()
         recruitments = get_palm_recruiting_data()
+        material_aid_projects = get_material_aid_data()
+
         data = {}
         countries_in_gen_tech = []
 
@@ -42,24 +44,35 @@ class HomeView(TemplateView):
                 data[country]["recruitment"] = num_recs
             else:
                 if num_recs > 0:
-                    data[country] = {"gen_tech": 0, "recruitment": num_recs}
+                    data[country] = {"recruitment": num_recs}
+
+            num_material_aid_projects = material_aid_projects.filter(parents=c).count()
+            if country in countries_in_gen_tech:
+                data[country]["material_aid"] = num_material_aid_projects
+            else:
+                if num_material_aid_projects > 0:
+                    print("%s = %s" % (country, num_material_aid_projects))
+                    data[country] = {"material_aid": num_material_aid_projects}
 
         sorted_data = sorted(data.items(), key=operator.itemgetter(0))
         categories = []
 
         gen_tech = []
         recs = []
+        material_aid = []
         for bar in sorted_data:
             country = bar[0]
             categories.append(country)
             wrike_categories = bar[1]
             #print(bar)
-            gen_tech.append(wrike_categories.get("gen_tech"))
-            recs.append(wrike_categories.get("recruitment"))
+            gen_tech.append(wrike_categories.get("gen_tech", "0"))
+            recs.append(wrike_categories.get("recruitment", "0"))
+            material_aid.append(wrike_categories.get("material_aid", 0))
 
         series = [
             {"name": "General Tech Support", "data": gen_tech},
-            {"name": "Recruitments", "data": recs}
+            {"name": "Recruitments", "data": recs},
+            {"name": "Material Aid", "data": material_aid}
         ]
         context['categories'] = json.dumps(categories)
         context['data'] = json.dumps(series)
