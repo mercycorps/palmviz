@@ -1,5 +1,6 @@
 import requests
 import json
+import operator
 import logging
 
 from django.core.urlresolvers import reverse_lazy
@@ -13,12 +14,68 @@ from django.views.generic import TemplateView, View
 
 from django.contrib import messages
 
-from .models import WrikeOauth2Credentials
+from .models import WrikeOauth2Credentials, Folder
 
 logger = logging.getLogger(__name__)
 
 class HomeView(TemplateView):
     template_name = 'wrike/home.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(HomeView, self).get_context_data(**kwargs)
+        gen_tech_tasks = get_palm_general_tech_support_by_countries()
+        countries = get_countries()
+        recruitments = get_palm_recruiting_data()
+        data = {}
+        countries_in_gen_tech = []
+
+
+        for task in gen_tech_tasks:
+            country = task['Country']
+            countries_in_gen_tech.append(country)
+            data[country] = {"gen_tech": task['Num_Tasks']}
+
+        for c in countries:
+            num_recs = recruitments.filter(parents=c).count()
+            country = c.title
+            if country in countries_in_gen_tech:
+                data[country]["recruitment"] = num_recs
+            else:
+                if num_recs > 0:
+                    data[country] = {"gen_tech": 0, "recruitment": num_recs}
+
+        sorted_data = sorted(data.items(), key=operator.itemgetter(0))
+        categories = []
+
+        gen_tech = []
+        recs = []
+        for bar in sorted_data:
+            country = bar[0]
+            categories.append(country)
+            wrike_categories = bar[1]
+            #print(bar)
+            gen_tech.append(wrike_categories.get("gen_tech"))
+            recs.append(wrike_categories.get("recruitment"))
+
+        series = [
+            {"name": "General Tech Support", "data": gen_tech},
+            {"name": "Recruitments", "data": recs}
+        ]
+        context['categories'] = json.dumps(categories)
+        context['data'] = json.dumps(series)
+        return context
+
+def get_countries():
+    return Folder.objects.filter(parents=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).order_by('title')
+
+
+def get_material_aid_data():
+    filters = {
+
+    }
+    countries = get_countries()
+    data = Folder.objects.filter(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID).filter(parents__in=countries)
+    return data
 
 
 def get_palm_general_tech_support_by_countries():
@@ -37,47 +94,11 @@ def get_palm_general_tech_support_by_countries():
 
     return tasks_by_country
 
-
-def get_palm_general_tech_support_data():
-    filters = {
-        "customfield__pk": settings.WRIKE_PALM_REGION_CUSTOM_FIELD_ID,
-        "task__folders__id": settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID
-        }
-    cft = CustomFieldTask.objects.filter(**filters)\
-            .distinct()\
-            .values('value')\
-            .annotate(region=F('value'), num_tasks=Count('task'))\
-            .values('region', 'num_tasks')\
-            .order_by('region')
-
-    return cft
-
-
 def get_palm_recruiting_data():
-    filters = {
-        "parents__id": settings.WRIKE_PALM_RECRUITING_FOLDER_ID,
-        "status__isnull": False
-    }
-    cft = Folder.objects.filter(**filters)\
-            .distinct()\
-            .values('value')\
-            .annotate(region=F('value'), num_tasks=Count('task'))\
-            .values('region', 'num_tasks')\
-            .order_by('region')
-    """
-    from wrike.utils import *
-    >>> process_wrike_data()
-    >>> access_token = get_wrike_access_token()
-    >>> headers = {"Authorization": "bearer %s" % access_token}
-    >>> url = 'https://www.wrike.com/api/v3/folders/IEAAAJLHI4CEIUMR/folders'
-    >>> folders = requests.get(url, headers=headers)
-    subfolders = Folder.objects.filter(parents__id='IEAAAJLHI4CAUMYT', status__isnull=False)
-    subfolders = Folder.objects.filter(parents__id='IEAAAJLHI4CEIUMR', status__isnull=False).filter(parents__id='IEAAAJLHI4CAUMYT')
-    url = 'https://www.wrike.com/api/v3/folders/IEAAAJLHI4CEIUMR/folders?customField={"id":"IEAAAJLHJUAACCIV","value":"West, Central %26 North Africa"}'
-
-    """
-    return cft
-
+    countries = get_countries()
+    recruitments = Folder.objects.filter(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID).filter(parents__in=countries)
+    #Folder.objects.filter(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID).fer(parents=iq)
+    return recruitments
 
 
 

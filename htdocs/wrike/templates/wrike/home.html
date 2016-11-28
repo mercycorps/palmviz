@@ -6,5 +6,50 @@
 
 
 {% block content %}
-<h1>Hello from Wrike Home page </h1>
+    <div id="container"></div>
+    <div id="categories" style="display: none;">{{ categories }}</div>
+    <div id="data" style="display: none;">{{ data }}</div>
 {% endblock content %}
+
+{% block extra_js %}
+<script type="text/javascript">
+"use strict";
+
+$(function () {
+    var categories = $.parseJSON($("#categories").html());
+    var data = $.parseJSON($("#data").html());
+
+    Highcharts.chart('container', {
+        chart: {
+            spacingBottom: 15,
+            height: 600,
+            type: 'bar'
+        },
+        credits: {
+            enabled: false,
+        },
+        title: {
+            text: 'PALM Field Support By Country'
+        },
+        xAxis: {
+            categories: categories
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: 'Total # of Support Instances'
+            }
+        },
+        legend: {
+            reversed: true
+        },
+        plotOptions: {
+            series: {
+                stacking: 'normal'
+            }
+        },
+        series: data
+    });
+});
+</script>
+{% endblock extra_js %}
