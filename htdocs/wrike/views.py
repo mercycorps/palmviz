@@ -27,6 +27,7 @@ class HomeView(TemplateView):
         countries = get_countries()
         recruitments = get_palm_recruiting_data()
         material_aid_projects = get_material_aid_data()
+        tdy_projects = get_short_term_tdy_data()
 
         data = {}
         countries_in_gen_tech = []
@@ -44,6 +45,7 @@ class HomeView(TemplateView):
                 data[country]["recruitment"] = num_recs
             else:
                 if num_recs > 0:
+                    countries_in_gen_tech.append(country)
                     data[country] = {"recruitment": num_recs}
 
             num_material_aid_projects = material_aid_projects.filter(parents=c).count()
@@ -51,8 +53,17 @@ class HomeView(TemplateView):
                 data[country]["material_aid"] = num_material_aid_projects
             else:
                 if num_material_aid_projects > 0:
-                    print("%s = %s" % (country, num_material_aid_projects))
+                    countries_in_gen_tech.append(country)
                     data[country] = {"material_aid": num_material_aid_projects}
+
+            num_tdy_projects = tdy_projects.filter(parents=c).count()
+            if country in countries_in_gen_tech:
+                data[country]["tdy"] = num_tdy_projects
+            else:
+                if num_tdy_projects > 0:
+                    countries_in_gen_tech.append(country)
+                    data[country] = {"tdy": num_tdy_projects}
+
 
         sorted_data = sorted(data.items(), key=operator.itemgetter(0))
         categories = []
@@ -60,6 +71,7 @@ class HomeView(TemplateView):
         gen_tech = []
         recs = []
         material_aid = []
+        tdys = []
         for bar in sorted_data:
             country = bar[0]
             categories.append(country)
@@ -68,11 +80,13 @@ class HomeView(TemplateView):
             gen_tech.append(wrike_categories.get("gen_tech", "0"))
             recs.append(wrike_categories.get("recruitment", "0"))
             material_aid.append(wrike_categories.get("material_aid", 0))
+            tdys.append(wrike_categories.get("tdy", 0))
 
         series = [
             {"name": "General Tech Support", "data": gen_tech},
             {"name": "Recruitments", "data": recs},
-            {"name": "Material Aid", "data": material_aid}
+            {"name": "Material Aid", "data": material_aid},
+            {"name": "Short-term TDYs", "data": tdys}
         ]
         context['categories'] = json.dumps(categories)
         context['data'] = json.dumps(series)
@@ -80,6 +94,18 @@ class HomeView(TemplateView):
 
 def get_countries():
     return Folder.objects.filter(parents=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).order_by('title')
+
+
+def get_agency_response_data():
+    countries = get_countries()
+    data = Folder.objects.filter(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID).filter(parents__in=countries)
+    return data
+
+
+def get_short_term_tdy_data():
+    countries = get_countries()
+    data = Folder.objects.filter(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID).filter(parents__in=countries)
+    return data
 
 
 def get_material_aid_data():
