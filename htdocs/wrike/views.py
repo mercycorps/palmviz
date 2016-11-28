@@ -29,6 +29,7 @@ class HomeView(TemplateView):
         material_aid_projects = get_material_aid_data()
         tdy_projects = get_short_term_tdy_data()
         agency_response_projects = get_agency_response_data()
+        field_trips_data = get_field_trips_data()
 
         data = {}
         countries_in_gen_tech = []
@@ -74,6 +75,14 @@ class HomeView(TemplateView):
                     countries_in_gen_tech.append(country)
                     data[country] = {"agency_response": num_agency_response_projects}
 
+            num_field_trips_data = field_trips_data.filter(parents=c).count()
+            if country in countries_in_gen_tech:
+                data[country]["field_trips"] = num_field_trips_data
+            else:
+                if num_field_trips_data > 0:
+                    countries_in_gen_tech.append(country)
+                    data[country] = {"field_trips": num_field_trips_data}
+
         sorted_data = sorted(data.items(), key=operator.itemgetter(0))
         categories = []
 
@@ -82,6 +91,8 @@ class HomeView(TemplateView):
         material_aid = []
         tdys = []
         agency_responses = []
+        field_trips = []
+
         for bar in sorted_data:
             country = bar[0]
             categories.append(country)
@@ -92,13 +103,15 @@ class HomeView(TemplateView):
             material_aid.append(wrike_categories.get("material_aid", "0"))
             tdys.append(wrike_categories.get("tdy", "0"))
             agency_responses.append(wrike_categories.get("agency_response", "0"))
+            field_trips.append(wrike_categories.get("field_trips", "0"))
 
         series = [
             {"name": "General Tech Support", "data": gen_tech},
             {"name": "Recruitments", "data": recs},
             {"name": "Material Aid", "data": material_aid},
             {"name": "Short-term TDYs", "data": tdys},
-            {"name": "Agency Responses", "data": agency_responses}
+            {"name": "Agency Responses", "data": agency_responses},
+            {"name": "Field Trips", "data": field_trips},
         ]
         context['categories'] = json.dumps(categories)
         context['data'] = json.dumps(series)
@@ -106,6 +119,12 @@ class HomeView(TemplateView):
 
 def get_countries():
     return Folder.objects.filter(parents=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).order_by('title')
+
+
+def get_field_trips_data():
+    countries = get_countries()
+    data = Folder.objects.filter(parents=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID).filter(parents__in=countries)
+    return data
 
 
 def get_agency_response_data():
