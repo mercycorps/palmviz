@@ -32,6 +32,7 @@ class HomeView(TemplateView):
         agency_response_projects = get_agency_response_data(countries)
         field_trips_data = get_field_trips_data(countries)
         shipping_n_logistics_projects = get_shipping_n_logistics_projects()
+        tenders_projects = get_tenders_data()
 
         # dictionary to hold data in the format expected by the hicharts stacked bar chart
         data = {}
@@ -50,6 +51,7 @@ class HomeView(TemplateView):
             num_agency_response_projects = agency_response_projects.filter(parents=c).count()
             num_field_trips_data = field_trips_data.filter(parents=c).count()
             num_shipping_n_logistics_projects = shipping_n_logistics_projects.filter(parents=c).count()
+            num_tenders_projects = tenders_projects.filter(parents=c).count()
 
             # Check whether the data dic already has gen_tasks for this country.
             if data.get(country, None) is None:
@@ -58,7 +60,8 @@ class HomeView(TemplateView):
                 # then initiate an empty subdictionary for this country in the main data dic.
                 if num_recs > 0 or num_material_aid_projects > 0 or num_tdy_projects > 0\
                         or num_agency_response_projects > 0 or num_field_trips_data > 0\
-                        or num_shipping_n_logistics_projects > 0:
+                        or num_shipping_n_logistics_projects > 0\
+                        or num_tenders_projects > 0:
                             data[country] = {}
                 else:
                     # At this point, there is no data for this country in any category so skip.
@@ -71,6 +74,7 @@ class HomeView(TemplateView):
             data[country]["agency_response"] = num_agency_response_projects
             data[country]["field_trips"] = num_field_trips_data
             data[country]["snl"] = num_shipping_n_logistics_projects
+            data[country]["tenders"] = num_tenders_projects
 
         # Sort the main data dic by Country in asc order.
         sorted_data = sorted(data.items(), key=operator.itemgetter(0))
@@ -84,6 +88,7 @@ class HomeView(TemplateView):
         agency_responses_list = []
         field_trips_list = []
         shipping_n_logistics_list = []
+        tenders_list = []
 
         # Loop through the sorted data and populate a list of data points for each
         # supporty category in a format that the hicharts stacked bar chart expects
@@ -98,6 +103,7 @@ class HomeView(TemplateView):
             agency_responses_list.append(series_names.get("agency_response", "0"))
             field_trips_list.append(series_names.get("field_trips", "0"))
             shipping_n_logistics_list.append(series_names.get("snl", "0"))
+            tenders_list.append(series_names.get("tenders", "0"))
 
         # Final list of dictionaries for the hichart stacked bar chart.
         series = [
@@ -108,6 +114,7 @@ class HomeView(TemplateView):
             {"name": "Agency Responses", "data": agency_responses_list},
             {"name": "Field Trips", "data": field_trips_list},
             {"name": "Shipping and Logistics", "data": shipping_n_logistics_list},
+            {"name": "Tenders", "data": tenders_list},
         ]
         context['categories'] = json.dumps(y_axis_labels)
         context['data'] = json.dumps(series)
@@ -115,6 +122,13 @@ class HomeView(TemplateView):
 
 def get_countries():
     return Folder.objects.filter(parents=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).order_by('title')
+
+
+def get_tenders_data(countries=None):
+    if countries is None: countries = get_countries()
+    data = Folder.objects.filter(parents=settings.WRIKE_PALM_TENDERS_FOLDER_ID).filter(parents__in=countries)
+    return data
+
 
 def get_shipping_n_logistics_projects(countries=None):
     if countries is None: countries = get_countries()
