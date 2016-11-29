@@ -25,11 +25,11 @@ class HomeView(TemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         gen_tech_tasks = get_palm_general_tech_support_by_countries()
         countries = get_countries()
-        recruitments = get_palm_recruiting_data()
-        material_aid_projects = get_material_aid_data()
-        tdy_projects = get_short_term_tdy_data()
-        agency_response_projects = get_agency_response_data()
-        field_trips_data = get_field_trips_data()
+        recruitments = get_palm_recruiting_data(countries)
+        material_aid_projects = get_material_aid_data(countries)
+        tdy_projects = get_short_term_tdy_data(countries)
+        agency_response_projects = get_agency_response_data(countries)
+        field_trips_data = get_field_trips_data(countries)
 
         data = {}
         countries_in_gen_tech = []
@@ -41,44 +41,36 @@ class HomeView(TemplateView):
             data[country] = {"gen_tech": task['Num_Tasks']}
 
         for c in countries:
-            num_recs = recruitments.filter(parents=c).count()
             country = c.title
+            num_recs = recruitments.filter(parents=c).count()
+            num_material_aid_projects = material_aid_projects.filter(parents=c).count()
+            num_tdy_projects = tdy_projects.filter(parents=c).count()
+            num_agency_response_projects = agency_response_projects.filter(parents=c).count()
+            num_field_trips_data = field_trips_data.filter(parents=c).count()
+
             if country in countries_in_gen_tech:
                 data[country]["recruitment"] = num_recs
+                data[country]["material_aid"] = num_material_aid_projects
+                data[country]["tdy"] = num_tdy_projects
+                data[country]["agency_response"] = num_agency_response_projects
+                data[country]["field_trips"] = num_field_trips_data
             else:
                 if num_recs > 0:
                     countries_in_gen_tech.append(country)
                     data[country] = {"recruitment": num_recs}
 
-            num_material_aid_projects = material_aid_projects.filter(parents=c).count()
-            if country in countries_in_gen_tech:
-                data[country]["material_aid"] = num_material_aid_projects
-            else:
                 if num_material_aid_projects > 0:
                     countries_in_gen_tech.append(country)
                     data[country] = {"material_aid": num_material_aid_projects}
 
-            num_tdy_projects = tdy_projects.filter(parents=c).count()
-            if country in countries_in_gen_tech:
-                data[country]["tdy"] = num_tdy_projects
-            else:
                 if num_tdy_projects > 0:
                     countries_in_gen_tech.append(country)
                     data[country] = {"tdy": num_tdy_projects}
 
-
-            num_agency_response_projects = agency_response_projects.filter(parents=c).count()
-            if country in countries_in_gen_tech:
-                data[country]["agency_response"] = num_agency_response_projects
-            else:
                 if num_agency_response_projects > 0:
                     countries_in_gen_tech.append(country)
                     data[country] = {"agency_response": num_agency_response_projects}
 
-            num_field_trips_data = field_trips_data.filter(parents=c).count()
-            if country in countries_in_gen_tech:
-                data[country]["field_trips"] = num_field_trips_data
-            else:
                 if num_field_trips_data > 0:
                     countries_in_gen_tech.append(country)
                     data[country] = {"field_trips": num_field_trips_data}
@@ -121,29 +113,26 @@ def get_countries():
     return Folder.objects.filter(parents=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).order_by('title')
 
 
-def get_field_trips_data():
-    countries = get_countries()
+def get_field_trips_data(countries=None):
+    if countries is None: countries = get_countries()
     data = Folder.objects.filter(parents=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID).filter(parents__in=countries)
     return data
 
 
-def get_agency_response_data():
-    countries = get_countries()
+def get_agency_response_data(countries=None):
+    if countries is None: countries = get_countries()
     data = Folder.objects.filter(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID).filter(parents__in=countries)
     return data
 
 
-def get_short_term_tdy_data():
-    countries = get_countries()
+def get_short_term_tdy_data(countries=None):
+    if countries is None: countries = get_countries()
     data = Folder.objects.filter(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID).filter(parents__in=countries)
     return data
 
 
-def get_material_aid_data():
-    filters = {
-
-    }
-    countries = get_countries()
+def get_material_aid_data(countries=None):
+    if countries is None: countries = get_countries()
     data = Folder.objects.filter(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID).filter(parents__in=countries)
     return data
 
@@ -164,8 +153,8 @@ def get_palm_general_tech_support_by_countries():
 
     return tasks_by_country
 
-def get_palm_recruiting_data():
-    countries = get_countries()
+def get_palm_recruiting_data(countries=None):
+    if countries is None: countries = get_countries()
     recruitments = Folder.objects.filter(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID).filter(parents__in=countries)
     #Folder.objects.filter(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID).fer(parents=iq)
     return recruitments
