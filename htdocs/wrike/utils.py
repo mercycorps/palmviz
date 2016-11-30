@@ -194,6 +194,7 @@ def process_wrike_folder_and_projects_helper(data):
     for row in data:
         db_row = {}
         customfields = None
+        project_assignee_ids = []
 
         for col,val in row.iteritems():
             if col == "project":
@@ -201,6 +202,15 @@ def process_wrike_folder_and_projects_helper(data):
                 timestamp = datetime.datetime.strptime(val['createdDate'][:19], "%Y-%m-%dT%H:%M:%S")
                 timestamp = timestamp.replace(tzinfo=pytz.UTC)
                 db_row["createdDate"] = timestamp
+                if val.get("startDate", None): db_row["startDate"] = val["startDate"]
+                if val.get("endDate", None): db_row["endDate"] = val["endDate"]
+                if val.get("completedDate", None):
+                    completedDate = datetime.datetime.strptime(val['completedDate'][:19], "%Y-%m-%dT%H:%M:%S")
+                    completedDate = completedDate.replace(tzinfo=pytz.UTC)
+                    db_row["completedDate"] = completedDate
+                ownerIds = val.get("ownerIds", None)
+                for ownerId in ownerIds or []:
+                    project_assignee_ids.append(ownerId)
             elif col == "parentIds":
                 parents_mapping.append({"id":row['id'], "parentIds": val})
             elif col == "customFields":
@@ -209,6 +219,11 @@ def process_wrike_folder_and_projects_helper(data):
 
         try:
             folder, created = Folder.objects.update_or_create(id=row['id'], defaults=db_row)
+            if project_assignee_ids:
+                folder.assignees.clear()
+                for assignee_id in project_assignee_ids:
+                    assignee = Contact.objects.get(id=assignee_id)
+                    folder.assignees.add(assignee)
         except Exception as e:
             logger.error(e)
             return False

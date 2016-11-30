@@ -75,10 +75,14 @@ class Folder(BaseModel):
     scope = models.CharField(max_length=100, null=True, blank=True)
     permalink = models.URLField(max_length=254, null=True, blank=True)
     parents = models.ManyToManyField('self', null=True, blank=True, symmetrical=False, related_name="subfolders")
-    # status is only available for projects not for folders
+    # The assignee, status, createdDate, startDate, endDate and completedDate fiels
+    # are only available for Projects-Folders not for Folders
+    assignees = models.ManyToManyField(Contact, related_name="projects")
     status = models.CharField(max_length=20, null=True, blank=True)
-    # createdDate is only available for projects not for folders
     createdDate = models.DateTimeField(blank=True, null=True)
+    startDate = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
+    endDate = models.DateField(null=True, blank=True, auto_now=False, auto_now_add=False)
+    completedDate = models.DateTimeField(blank=True, null=True)
     customfields = models.ManyToManyField(
         CustomField,
         through = 'CustomFieldFolder',
