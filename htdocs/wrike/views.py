@@ -6,7 +6,7 @@ import logging
 from django.core.urlresolvers import reverse_lazy
 from django.conf import settings
 
-from django.db.models import Count, F, FloatField, Sum
+from django.db.models import Q, Count, F, FloatField, Sum
 
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
@@ -21,15 +21,29 @@ logger = logging.getLogger(__name__)
 class HomeView(TemplateView):
     template_name = 'wrike/home.html'
 
+    def get(self, request, *args, **kwargs):
+        start_date = request.GET.get("start", None)
+        end_date = request.GET.get("end", None)
+        kwargs['start_date'] = start_date
+        kwargs['end_date'] = end_date
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
     def get_context_data(self, **kwargs):
         context = super(HomeView, self).get_context_data(**kwargs)
-        data = get_support_data_by_country()
+        start_date = kwargs.get("start_date", None)
+        end_date = kwargs.get("end_date", None)
+        filters = None
+        if start_date or end_date:
+            filters = {"start": start_date, "end": end_date}
+        data = get_support_data_by_country(filters)
         context['categories'] = json.dumps(data[0])
         context['data'] = json.dumps(data[1])
         return context
 
 
-def get_support_data_by_country():
+def get_support_data_by_country(filters):
+    print(filters)
     gen_tech_tasks = get_palm_general_tech_support_by_countries()
     countries = get_countries()
     recruitments = get_palm_recruiting_data(countries)
@@ -125,43 +139,68 @@ def get_support_data_by_country():
     return (y_axis_labels, series)
 
 def get_countries():
-    return Folder.objects.filter(parents=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).order_by('title')
+    return Folder.objects\
+        .filter(parents=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID)\
+        .order_by('title')
 
 
 def get_tenders_data(countries=None):
     if countries is None: countries = get_countries()
-    data = Folder.objects.filter(parents=settings.WRIKE_PALM_TENDERS_FOLDER_ID).filter(parents__in=countries)
+    data = Folder.objects\
+        .filter(parents=settings.WRIKE_PALM_TENDERS_FOLDER_ID)\
+        .filter(parents__in=countries)
     return data
 
 
 def get_shipping_n_logistics_projects(countries=None):
     if countries is None: countries = get_countries()
-    data = Folder.objects.filter(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID).filter(parents__in=countries)
+    data = Folder.objects\
+        .filter(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)\
+        .filter(parents__in=countries)
     return data
 
 
 def get_field_trips_data(countries=None):
     if countries is None: countries = get_countries()
-    data = Folder.objects.filter(parents=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID).filter(parents__in=countries)
+    data = Folder.objects\
+        .filter(Q(parents=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID)|\
+                Q(parents=settings.WRIKE_PALM_FIELD_TRIPS_ARCHIVE_FOLDER_ID))\
+        .filter(parents__in=countries)
     return data
 
 
 def get_agency_response_data(countries=None):
     if countries is None: countries = get_countries()
-    data = Folder.objects.filter(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID).filter(parents__in=countries)
+    data = Folder.objects\
+        .filter(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)\
+        .filter(parents__in=countries)
     return data
 
 
 def get_short_term_tdy_data(countries=None):
     if countries is None: countries = get_countries()
-    data = Folder.objects.filter(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID).filter(parents__in=countries)
+    data = Folder.objects\
+        .filter(Q(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID) |\
+                 Q(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_ARCHIVE_FOLDER_ID))\
+        .filter(parents__in=countries)
     return data
 
 
 def get_material_aid_data(countries=None):
     if countries is None: countries = get_countries()
-    data = Folder.objects.filter(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID).filter(parents__in=countries)
+    data = Folder.objects\
+        .filter(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)\
+        .filter(parents__in=countries)
     return data
+
+
+def get_palm_recruiting_data(countries=None):
+    if countries is None: countries = get_countries()
+    recruitments = Folder.objects\
+        .filter(Q(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID) |\
+                 Q(parents=settings.WRIKE_PALM_RECRUITMENT_ARCHIVE_FOLDER_ID))\
+        .filter(parents__in=countries)
+    return recruitments
 
 
 def get_palm_general_tech_support_by_countries():
@@ -179,13 +218,6 @@ def get_palm_general_tech_support_by_countries():
                         .order_by('Country')
 
     return tasks_by_country
-
-def get_palm_recruiting_data(countries=None):
-    if countries is None: countries = get_countries()
-    recruitments = Folder.objects.filter(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID).filter(parents__in=countries)
-    #Folder.objects.filter(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID).fer(parents=iq)
-    return recruitments
-
 
 
 class WrikeOauth2SetupStep1(View):

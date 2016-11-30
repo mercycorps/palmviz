@@ -227,6 +227,7 @@ def process_wrike_folder_and_projects_helper(data):
 
     for mapping in parents_mapping:
         folder = Folder.objects.get(pk=mapping.get("id"))
+        folder.parents.clear()
         parentIds = mapping.get("parentIds")
         for pid in parentIds:
             try:
@@ -312,6 +313,7 @@ def process_wrike_tasks_helper(data):
                 logger.error(e)
                 continue
 
+        task.folders.clear()
         # Associate task with folders (parents)
         for pid in parentIds:
             try:
@@ -321,6 +323,7 @@ def process_wrike_tasks_helper(data):
                 logger.error("parentID=%s: %s" % (pid, e))
                 continue
 
+        task.assignees.clear()
         # Associate task with contacts, i.e. those who are responsible for it.
         for rid in responsibleIds:
             try:
