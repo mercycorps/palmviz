@@ -1,3 +1,5 @@
+import datetime
+import pytz
 import requests
 import json
 import operator
@@ -22,37 +24,38 @@ class HomeView(TemplateView):
     template_name = 'wrike/home.html'
 
     def get(self, request, *args, **kwargs):
-        start_date = request.GET.get("start", None)
-        end_date = request.GET.get("end", None)
-        kwargs['start_date'] = start_date
-        kwargs['end_date'] = end_date
+        start = request.GET.get("start", None)
+        end = request.GET.get("end", None)
+
+        if start:
+            start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
+            start = start_date.replace(tzinfo=pytz.UTC)
+        if end:
+            end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
+            end = end_date.replace(tzinfo=pytz.UTC)
+
+        kwargs['criteria'] = {'start': start, 'end': end}
         context = self.get_context_data(**kwargs)
         return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
         context = super(HomeView, self).get_context_data(**kwargs)
-        start_date = kwargs.get("start_date", None)
-        end_date = kwargs.get("end_date", None)
-        filters = None
-        if start_date or end_date:
-            filters = {"start": start_date, "end": end_date}
-        data = get_support_data_by_country(filters)
+        data = get_support_data_by_country(kwargs.get('criteria', None))
         context['categories'] = json.dumps(data[0])
         context['data'] = json.dumps(data[1])
         return context
 
 
-def get_support_data_by_country(filters):
-    print(filters)
-    gen_tech_tasks = get_palm_general_tech_support_by_countries()
+def get_support_data_by_country(criteria):
+    gen_tech_tasks = get_palm_general_tech_support_by_countries(criteria)
     countries = get_countries()
-    recruitments = get_palm_recruiting_data(countries)
-    material_aid_projects = get_material_aid_data(countries)
-    tdy_projects = get_short_term_tdy_data(countries)
-    agency_response_projects = get_agency_response_data(countries)
-    field_trips_data = get_field_trips_data(countries)
-    shipping_n_logistics_projects = get_shipping_n_logistics_projects()
-    tenders_projects = get_tenders_data()
+    recruitments = get_palm_recruiting_data(countries, criteria)
+    material_aid_projects = get_material_aid_data(countries, criteria)
+    tdy_projects = get_short_term_tdy_data(countries, criteria)
+    agency_response_projects = get_agency_response_data(countries, criteria)
+    field_trips_data = get_field_trips_data(countries, criteria)
+    shipping_n_logistics_projects = get_shipping_n_logistics_projects(countries, criteria)
+    tenders_projects = get_tenders_data(countries, criteria)
 
     # dictionary to hold data in the format expected by the hicharts stacked bar chart
     data = {}
@@ -144,7 +147,7 @@ def get_countries():
         .order_by('title')
 
 
-def get_tenders_data(countries=None):
+def get_tenders_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
         .filter(parents=settings.WRIKE_PALM_TENDERS_FOLDER_ID)\
@@ -152,7 +155,7 @@ def get_tenders_data(countries=None):
     return data
 
 
-def get_shipping_n_logistics_projects(countries=None):
+def get_shipping_n_logistics_projects(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
         .filter(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)\
@@ -160,7 +163,7 @@ def get_shipping_n_logistics_projects(countries=None):
     return data
 
 
-def get_field_trips_data(countries=None):
+def get_field_trips_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID)|\
@@ -169,7 +172,7 @@ def get_field_trips_data(countries=None):
     return data
 
 
-def get_agency_response_data(countries=None):
+def get_agency_response_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
         .filter(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)\
@@ -177,7 +180,7 @@ def get_agency_response_data(countries=None):
     return data
 
 
-def get_short_term_tdy_data(countries=None):
+def get_short_term_tdy_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID) |\
@@ -186,7 +189,7 @@ def get_short_term_tdy_data(countries=None):
     return data
 
 
-def get_material_aid_data(countries=None):
+def get_material_aid_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
         .filter(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)\
@@ -194,24 +197,37 @@ def get_material_aid_data(countries=None):
     return data
 
 
-def get_palm_recruiting_data(countries=None):
+def get_palm_recruiting_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
+    filters = {}
+    start = criteria.get('start', None)
+    end = criteria.get('end', None)
+    if start:
+        filters['completedDate__gte'] = start
+    if end:
+        filters['completedDate__lte'] = end
     recruitments = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID) |\
                  Q(parents=settings.WRIKE_PALM_RECRUITMENT_ARCHIVE_FOLDER_ID))\
+        .filter(**filters)\
         .filter(parents__in=countries)
     return recruitments
 
 
-def get_palm_general_tech_support_by_countries():
+def get_palm_general_tech_support_by_countries(criteria):
     """
     Returns number of tasks by country in the PALM General Tech Support folder.
     """
-    filters = {
-        "tasks__folders__id": settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID
-    }
+    filtering = {"tasks__folders__id": settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID}
+    start = criteria.get('start', None)
+    end = criteria.get('end', None)
+    if start:
+        filtering['tasks__completedDate__gte'] = start
+    if end:
+        filtering['tasks__completedDate__lte'] = end
+
     tasks_by_country = Folder.objects.get(pk=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).subfolders\
-                        .filter(tasks__folders__id=settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID)\
+                        .filter(**filtering)\
                         .distinct()\
                         .annotate(Country=F('title'), Num_Tasks=Count('tasks'))\
                         .values('Country', 'Num_Tasks')\
