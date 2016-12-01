@@ -10,7 +10,7 @@ from django.conf import settings
 
 from django.db.models import Q, Count, F, FloatField, Sum
 
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import TemplateView, View
 
@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 class HomeView(TemplateView):
     template_name = 'wrike/home.html'
 
-    def get(self, request, *args, **kwargs):
-        start = request.GET.get("start", None)
-        end = request.GET.get("end", None)
+    def post(self, request, *args, **kwargs):
+        start = request.POST.get("start", None)
+        end = request.POST.get("end", None)
 
         if start:
             start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
@@ -40,7 +40,11 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(HomeView, self).get_context_data(**kwargs)
-        data = get_support_data_by_country(kwargs.get('criteria', None))
+        context['start_date'] = self.request.POST.get("start", '')
+        context['end_date'] = self.request.POST.get("end", '')
+
+        criteria = kwargs.get('criteria', {})
+        data = get_support_data_by_country(criteria)
         context['categories'] = json.dumps(data[0])
         context['data'] = json.dumps(data[1])
         return context

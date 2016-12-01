@@ -7,16 +7,25 @@
 
 {% block content %}
     <div class="row">
-        <form class="form-inline" id="date_range_form" method="GET">
-            <div class="form-group">
-                <div class="input-daterange input-group" id="datepicker">
-                    <input type="text" class="form-control input-sm" name="start" placeholder="From Date">
-                    <span class="input-group-addon">to</span>
-                    <input type="text" class="form-control input-sm" name="end" placeholder="To Date">
-                </div>
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">Completion Date Range Filter</h3>
             </div>
-            <button type="submit" class="btn btn-sm btn-default">Submit</button>
-        </form>
+            <div class="panel-body">
+                <form class="form-inline" id="date_range_form" method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <div class="input-daterange input-group" id="datepicker">
+                            <input type="text" class="form-control input-sm" name="start" placeholder="From Date" value={{start_date}}>
+                            <span class="input-group-addon">to</span>
+                            <input type="text" class="form-control input-sm" name="end" placeholder="To Date" value={{end_date}}>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                    <button type="reset" class="btn btn-sm btn-danger">Clear</button>
+                </form>
+            </div>
+        </div>
     </div>
     <div id="container"></div>
     <div id="categories" style="display: none;">{{ categories }}</div>
@@ -25,96 +34,61 @@
 
 {% block extra_js %}
 <script type="text/javascript">
-"use strict";
-/*
-$("body").on("submit", "#date_range_form", function(e) {
-    e.preventDefault();
-    var filters = {};
-    $("#date_range_form *").filter(":input").each(function() {
-        if (this.name != 'submit' && this.name != 'reset' && this.value && this.name != '') {
-            var values = new Array($(this).val());
-            filters[this.name] = values.join(",");
-        }
+    "use strict";
+
+    $(function () {
+        draw_chart();
     });
-    console.log(filters);
-    draw_chart();
-});
-*/
 
-function draw_chart() {
-    var categories = $.parseJSON($("#categories").html());
-    var data = $.parseJSON($("#data").html());
-
-    var chart_config = {
-        chart: {
-            height: 600,
-            type: 'bar'
-        },
-        credits: {
-            enabled: false,
-        },
-        title: {
-            text: 'PALM Field Support By Country'
-        },
-        xAxis: {
-            categories: categories
-        },
-        yAxis: {
-            min: 0,
-            title: {
-                text: 'Total # of Support Instances'
-            }
-        },
-        plotOptions: {
-            series: {
-                stacking: 'normal'
-            }
-        },
-        legend: {
-            align: 'right',
-            verticalAlign: 'middle',
-            layout: 'vertical'
-        },
-        series: data
-    };
-    $("#container").highcharts(chart_config);
-}
-$(function () {
-    draw_chart();
-});
-/*
-$(function () {
-    var categories = $.parseJSON($("#categories").html());
-    var data = $.parseJSON($("#data").html());
-
-    Highcharts.chart('container', {
-        chart: {
-            height: 600,
-            type: 'bar'
-        },
-        credits: {
-            enabled: false,
-        },
-        title: {
-            text: 'PALM Field Support By Country'
-        },
-        xAxis: {
-            categories: categories
-        },
-        yAxis: {
-            min: 0,
-            title: {
-                text: 'Total # of Support Instances'
-            }
-        },
-        plotOptions: {
-            series: {
-                stacking: 'normal'
-            }
-        },
-        series: data
+    $("body").on("reset", "#date_range_form", function(e) {
+        e.preventDefault();
+        var form = this;
+        $(':input', form).each(function() {
+            var type = this.type;
+            if (type == 'text')
+                this.value = '';
+        });
+        window.location.replace(location.href);
     });
-});
-*/
+
+    function draw_chart() {
+        var categories = $.parseJSON($("#categories").html());
+        var data = $.parseJSON($("#data").html());
+
+        var chart_config = {
+            chart: {
+                height: 600,
+                type: 'bar'
+            },
+            credits: {
+                enabled: false,
+            },
+            title: {
+                text: 'PALM Field Support By Country'
+            },
+            xAxis: {
+                categories: categories
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Total # of Support Instances'
+                }
+            },
+            plotOptions: {
+                series: {
+                    stacking: 'normal'
+                }
+            },
+            legend: {
+                align: 'right',
+                verticalAlign: 'middle',
+                layout: 'vertical'
+            },
+            series: data
+        };
+        $("#container").highcharts(chart_config);
+    }
+
 </script>
 {% endblock extra_js %}
