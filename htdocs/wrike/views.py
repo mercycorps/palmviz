@@ -17,7 +17,8 @@ from .views_helpers import *
 
 logger = logging.getLogger(__name__)
 
-class HomeView(TemplateView):
+
+class SupportByRegion(TemplateView):
     template_name = 'wrike/home.html'
 
     def post(self, request, *args, **kwargs):
@@ -36,12 +37,42 @@ class HomeView(TemplateView):
         return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
-        context = super(HomeView, self).get_context_data(**kwargs)
+        context = super(SupportByRegion, self).get_context_data(**kwargs)
         context['start_date'] = self.request.POST.get("start", '')
         context['end_date'] = self.request.POST.get("end", '')
 
         criteria = kwargs.get('criteria', {})
         data = get_support_data_by_region(criteria)
+        context['categories'] = json.dumps(data[0])
+        context['data'] = json.dumps(data[1])
+        return context
+
+
+class SupportByCountry(TemplateView):
+    template_name = 'wrike/home.html'
+
+    def post(self, request, *args, **kwargs):
+        start = request.POST.get("start", None)
+        end = request.POST.get("end", None)
+
+        if start:
+            start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
+            start = start_date.replace(tzinfo=pytz.UTC)
+        if end:
+            end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
+            end = end_date.replace(tzinfo=pytz.UTC)
+
+        kwargs['criteria'] = {'start': start, 'end': end}
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super(SupportByCountry, self).get_context_data(**kwargs)
+        context['start_date'] = self.request.POST.get("start", '')
+        context['end_date'] = self.request.POST.get("end", '')
+
+        criteria = kwargs.get('criteria', {})
+        data = get_support_data_by_country(criteria)
         context['categories'] = json.dumps(data[0])
         context['data'] = json.dumps(data[1])
         return context
