@@ -109,7 +109,8 @@ def get_countries():
 def get_tenders_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
-        .filter(parents=settings.WRIKE_PALM_TENDERS_FOLDER_ID)\
+        .filter(Q(parents=settings.WRIKE_PALM_TENDERS_FOLDER_ID)|\
+                Q(parents=settings.WRIKE_PALM_TENDERS_ARCHIVE_FOLDER_ID))\
         .filter(parents__in=countries)
     return data
 
@@ -117,7 +118,8 @@ def get_tenders_data(countries=None, criteria=None):
 def get_shipping_n_logistics_projects(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
-        .filter(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)\
+        .filter(Q(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)|\
+                Q(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_ARCHIVE_FOLDER_ID))\
         .filter(parents__in=countries)
     return data
 
@@ -134,7 +136,8 @@ def get_field_trips_data(countries=None, criteria=None):
 def get_agency_response_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
-        .filter(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)\
+        .filter(Q(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)|\
+                Q(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_ARCHIVE_FOLDER_ID))\
         .filter(parents__in=countries)
     return data
 
@@ -151,7 +154,8 @@ def get_short_term_tdy_data(countries=None, criteria=None):
 def get_material_aid_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
     data = Folder.objects\
-        .filter(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)\
+        .filter(Q(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)|\
+                Q(parents=settings.WRIKE_PALM_MATERIAL_AID_ARCHIVE_FOLDER_ID))\
         .filter(parents__in=countries)
     return data
 
