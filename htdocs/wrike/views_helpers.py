@@ -5,8 +5,103 @@ from django.conf import settings
 
 from .models import *
 
+def get_support_data_by_region(criteria):
+    parent_folder_id = settings.WRIKE_PALM_RPD_PORTFOLIOS_FOLDER_ID
+    gen_tech_tasks = get_palm_general_tech_support_by_countries(parent_folder_id, criteria)
+    regions = get_regions()
+    recruitments = get_palm_recruiting_data(regions, criteria)
+    material_aid_projects = get_material_aid_data(regions, criteria)
+    tdy_projects = get_short_term_tdy_data(regions, criteria)
+    agency_response_projects = get_agency_response_data(regions, criteria)
+    field_trips_data = get_field_trips_data(regions, criteria)
+    shipping_n_logistics_projects = get_shipping_n_logistics_projects(regions, criteria)
+    tenders_projects = get_tenders_data(regions, criteria)
+
+    # dictionary to hold data in the format expected by the hicharts stacked bar chart
+    data = {}
+
+    # Add Tasks count by country to the data dictionary.
+    for task in gen_tech_tasks:
+        country = task['Country']
+        data[country] = {"gen_tech": task['Num_Tasks']}
+
+
+    for r in regions:
+        region = r.title
+        num_recs = recruitments.filter(parents=r).count()
+        num_material_aid_projects = material_aid_projects.filter(parents=r).count()
+        num_tdy_projects = tdy_projects.filter(parents=r).count()
+        num_agency_response_projects = agency_response_projects.filter(parents=r).count()
+        num_field_trips_data = field_trips_data.filter(parents=r).count()
+        num_shipping_n_logistics_projects = shipping_n_logistics_projects.filter(parents=r).count()
+        num_tenders_projects = tenders_projects.filter(parents=r).count()
+
+        if data.get(region, None) is None:
+            # Apparently, there are no gen_tasks for this region in the main data dic.
+            # Now check if there is data in any other category for this region and if there is
+            # then initiate an empty subdictionary for this region in the main data dic.
+            if num_recs > 0 or num_material_aid_projects > 0 or num_tdy_projects > 0\
+                    or num_agency_response_projects > 0 or num_field_trips_data > 0\
+                    or num_shipping_n_logistics_projects > 0\
+                    or num_tenders_projects > 0:
+                        data[region] = {}
+            else:
+                # At this point, there is no data for this country in any category so skip.
+                continue
+
+        # Add data for each category to this country in the main data dic.
+        data[region]["recruitment"] = num_recs
+        data[region]["material_aid"] = num_material_aid_projects
+        data[region]["tdy"] = num_tdy_projects
+        data[region]["agency_response"] = num_agency_response_projects
+        data[region]["field_trips"] = num_field_trips_data
+        data[region]["snl"] = num_shipping_n_logistics_projects
+        data[region]["tenders"] = num_tenders_projects
+
+    # Sort the main data dic by Country in asc order.
+    sorted_data = sorted(data.items(), key=operator.itemgetter(0))
+
+    y_axis_labels = []
+    gen_tech_list = []
+    recruitments_list = []
+    material_aid_list = []
+    tdys_list = []
+    agency_responses_list = []
+    field_trips_list = []
+    shipping_n_logistics_list = []
+    tenders_list = []
+
+    # Loop through the sorted data and populate a list of data points for each
+    # supporty category in a format that the hicharts stacked bar chart expects
+    for bar in sorted_data:
+        region = bar[0]
+        y_axis_labels.append(region)
+        series_names = bar[1]
+        gen_tech_list.append(series_names.get("gen_tech", "0"))
+        recruitments_list.append(series_names.get("recruitment", "0"))
+        material_aid_list.append(series_names.get("material_aid", "0"))
+        tdys_list.append(series_names.get("tdy", "0"))
+        agency_responses_list.append(series_names.get("agency_response", "0"))
+        field_trips_list.append(series_names.get("field_trips", "0"))
+        shipping_n_logistics_list.append(series_names.get("snl", "0"))
+        tenders_list.append(series_names.get("tenders", "0"))
+
+    # Final list of dictionaries for the hichart stacked bar chart.
+    series = [
+        {"name": "General Tech Support", "data": gen_tech_list},
+        {"name": "Recruitments", "data": recruitments_list},
+        {"name": "Material Aid", "data": material_aid_list},
+        {"name": "Short-term TDYs", "data": tdys_list},
+        {"name": "Agency Responses", "data": agency_responses_list},
+        {"name": "Field Trips", "data": field_trips_list},
+        {"name": "Shipping and Logistics", "data": shipping_n_logistics_list},
+        {"name": "Tenders", "data": tenders_list},
+    ]
+    return (y_axis_labels, series)
+
 def get_support_data_by_country(criteria):
-    gen_tech_tasks = get_palm_general_tech_support_by_countries(criteria)
+    parent_folder_id = settings.WRIKE_PALM_COUNTRIES_FOLDER_ID
+    gen_tech_tasks = get_palm_general_tech_support_by_countries(parent_folder_id, criteria)
     countries = get_countries()
     recruitments = get_palm_recruiting_data(countries, criteria)
     material_aid_projects = get_material_aid_data(countries, criteria)
@@ -182,13 +277,13 @@ def get_palm_recruiting_data(parent_folders=None, criteria=None):
     return recruitments
 
 
-def get_palm_general_tech_support_by_countries(criteria):
+def get_palm_general_tech_support_by_countries(parent_folder_id, criteria):
     """
     Returns number of tasks by country in the PALM General Tech Support folder.
     """
     filtering = {"tasks__folders__id": settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID}
     filtering.update(get_completed_date_filter("tasks__", criteria))
-    tasks_by_country = Folder.objects.get(pk=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).subfolders\
+    tasks_by_country = Folder.objects.get(pk=parent_folder_id).subfolders\
                         .filter(**filtering)\
                         .distinct()\
                         .annotate(Country=F('title'), Num_Tasks=Count('tasks'))\

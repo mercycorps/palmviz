@@ -41,7 +41,7 @@ class HomeView(TemplateView):
         context['end_date'] = self.request.POST.get("end", '')
 
         criteria = kwargs.get('criteria', {})
-        data = get_support_data_by_country(criteria)
+        data = get_support_data_by_region(criteria)
         context['categories'] = json.dumps(data[0])
         context['data'] = json.dumps(data[1])
         return context
