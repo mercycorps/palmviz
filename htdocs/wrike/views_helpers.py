@@ -106,81 +106,79 @@ def get_countries():
         .order_by('title')
 
 
-def get_tenders_data(countries=None, criteria=None):
-    if countries is None: countries = get_countries()
+def get_regions():
+    return Folder.objects\
+        .filter(parents=settings.WRIKE_PALM_RPD_PORTFOLIOS_FOLDER_ID)\
+        .order_by('title')
+
+
+def get_tenders_data(parent_folders=None, criteria=None):
     filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_TENDERS_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_TENDERS_ARCHIVE_FOLDER_ID))\
         .filter(**filters)\
-        .filter(parents__in=countries)
+        .filter(parents__in=parent_folders)
     return data
 
 
-def get_shipping_n_logistics_projects(countries=None, criteria=None):
-    if countries is None: countries = get_countries()
+def get_shipping_n_logistics_projects(parent_folders=None, criteria=None):
     filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_ARCHIVE_FOLDER_ID))\
         .filter(**filters)\
-        .filter(parents__in=countries)
+        .filter(parents__in=parent_folders)
     return data
 
 
-def get_field_trips_data(countries=None, criteria=None):
-    if countries is None: countries = get_countries()
+def get_field_trips_data(parent_folders=None, criteria=None):
     filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_FIELD_TRIPS_ARCHIVE_FOLDER_ID))\
         .filter(**filters)\
-        .filter(parents__in=countries)
+        .filter(parents__in=parent_folders)
     return data
 
 
-def get_agency_response_data(countries=None, criteria=None):
-    if countries is None: countries = get_countries()
+def get_agency_response_data(parent_folders=None, criteria=None):
     filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_ARCHIVE_FOLDER_ID))\
         .filter(**filters)\
-        .filter(parents__in=countries)
+        .filter(parents__in=parent_folders)
     return data
 
 
-def get_short_term_tdy_data(countries=None, criteria=None):
-    if countries is None: countries = get_countries()
+def get_short_term_tdy_data(parent_folders=None, criteria=None):
     filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID) |\
                  Q(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_ARCHIVE_FOLDER_ID))\
         .filter(**filters)\
-        .filter(parents__in=countries)
+        .filter(parents__in=parent_folders)
     return data
 
 
-def get_material_aid_data(countries=None, criteria=None):
-    if countries is None: countries = get_countries()
+def get_material_aid_data(parent_folders=None, criteria=None):
     filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_MATERIAL_AID_ARCHIVE_FOLDER_ID))\
         .filter(**filters)\
-        .filter(parents__in=countries)
+        .filter(parents__in=parent_folders)
     return data
 
 
-def get_palm_recruiting_data(countries=None, criteria=None):
-    if countries is None: countries = get_countries()
-
+def get_palm_recruiting_data(parent_folders=None, criteria=None):
     filters = get_completed_date_filter(None, criteria)
     recruitments = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID) |\
                  Q(parents=settings.WRIKE_PALM_RECRUITMENT_ARCHIVE_FOLDER_ID))\
         .filter(**filters)\
-        .filter(parents__in=countries)
+        .filter(parents__in=parent_folders)
     return recruitments
 
 
