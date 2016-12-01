@@ -108,67 +108,74 @@ def get_countries():
 
 def get_tenders_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
+    filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_TENDERS_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_TENDERS_ARCHIVE_FOLDER_ID))\
+        .filter(**filters)\
         .filter(parents__in=countries)
     return data
 
 
 def get_shipping_n_logistics_projects(countries=None, criteria=None):
     if countries is None: countries = get_countries()
+    filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_SHIPPING_LOGISTICS_ARCHIVE_FOLDER_ID))\
+        .filter(**filters)\
         .filter(parents__in=countries)
     return data
 
 
 def get_field_trips_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
+    filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_FIELD_TRIPS_ARCHIVE_FOLDER_ID))\
+        .filter(**filters)\
         .filter(parents__in=countries)
     return data
 
 
 def get_agency_response_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
+    filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_AGENCY_RESPONSE_ARCHIVE_FOLDER_ID))\
+        .filter(**filters)\
         .filter(parents__in=countries)
     return data
 
 
 def get_short_term_tdy_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
+    filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID) |\
                  Q(parents=settings.WRIKE_PALM_SHORT_TERM_TDY_ARCHIVE_FOLDER_ID))\
+        .filter(**filters)\
         .filter(parents__in=countries)
     return data
 
 
 def get_material_aid_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
+    filters = get_completed_date_filter(None, criteria)
     data = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)|\
                 Q(parents=settings.WRIKE_PALM_MATERIAL_AID_ARCHIVE_FOLDER_ID))\
+        .filter(**filters)\
         .filter(parents__in=countries)
     return data
 
 
 def get_palm_recruiting_data(countries=None, criteria=None):
     if countries is None: countries = get_countries()
-    filters = {}
-    start = criteria.get('start', None)
-    end = criteria.get('end', None)
-    if start:
-        filters['completedDate__gte'] = start
-    if end:
-        filters['completedDate__lte'] = end
+
+    filters = get_completed_date_filter(None, criteria)
     recruitments = Folder.objects\
         .filter(Q(parents=settings.WRIKE_PALM_RECRUITING_FOLDER_ID) |\
                  Q(parents=settings.WRIKE_PALM_RECRUITMENT_ARCHIVE_FOLDER_ID))\
@@ -182,13 +189,7 @@ def get_palm_general_tech_support_by_countries(criteria):
     Returns number of tasks by country in the PALM General Tech Support folder.
     """
     filtering = {"tasks__folders__id": settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID}
-    start = criteria.get('start', None)
-    end = criteria.get('end', None)
-    if start:
-        filtering['tasks__completedDate__gte'] = start
-    if end:
-        filtering['tasks__completedDate__lte'] = end
-
+    filtering.update(get_completed_date_filter("tasks__", criteria))
     tasks_by_country = Folder.objects.get(pk=settings.WRIKE_PALM_COUNTRIES_FOLDER_ID).subfolders\
                         .filter(**filtering)\
                         .distinct()\
@@ -197,3 +198,15 @@ def get_palm_general_tech_support_by_countries(criteria):
                         .order_by('Country')
 
     return tasks_by_country
+
+
+def get_completed_date_filter(prefix, criteria):
+    filters = {}
+    start = criteria.get('start', None)
+    end = criteria.get('end', None)
+    if prefix == None: prefix = ''
+    if start:
+        filters['%scompletedDate__gte' % prefix] = start
+    if end:
+        filters['%scompletedDate__lte' % prefix] = end
+    return filters
