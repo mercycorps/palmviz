@@ -73,11 +73,19 @@
                 min: 0,
                 title: {
                     text: 'Total # of Support Instances'
-                }
+                },
             },
             plotOptions: {
-                series: {
-                    stacking: 'normal'
+                bar: {
+                    stacking: 'normal',
+                    dataLabels: {
+                        enabled: true,
+                        color: (Highcharts.theme && Highcharts.theme.dataLabelsColor) || 'white',
+                        formatter:function(){
+                        if(this.y > 0)
+                            return this.y;
+                        }
+                    }
                 }
             },
             legend: {
