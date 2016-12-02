@@ -32,6 +32,7 @@ urlpatterns = [
     url(r'^api/docs/', schema_view),
 
     url(r'^login/$', views.login, name='login', kwargs={'template_name': '404.html'}),
+    url('^', include('django.contrib.auth.urls')),
     url(r'^logout/$', views.logout, name='logout', kwargs={'next_page': '/'}),
 
     url(r'^feedback/', include('feedback.urls')),
