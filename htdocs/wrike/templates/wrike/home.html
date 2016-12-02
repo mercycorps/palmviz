@@ -27,7 +27,9 @@
             </div>
         </div>
     </div>
-    <div id="container"></div>
+
+
+    <div id="container" class="row"></div>
     <div id="categories" style="display: none;">{{ categories }}</div>
     <div id="data" style="display: none;">{{ data }}</div>
 {% endblock content %}
@@ -57,8 +59,10 @@
 
         var chart_config = {
             chart: {
-                height: 600,
-                type: 'bar'
+                type: 'bar',
+                height:600,
+                borderColor: '#EBBA95',
+                borderWidth: 1,
             },
             credits: {
                 enabled: false,
@@ -89,11 +93,18 @@
                 }
             },
             legend: {
+                title: {
+                    text: 'Support Categories<br/><span style="font-size: 9px; color: #666; font-weight: normal">(Click to hide)</span>',
+                    style: {
+                        fontStyle: 'italic'
+                    }
+                },
                 align: 'right',
-                verticalAlign: 'middle',
-                layout: 'vertical'
+                verticalAlign: 'top',
+                layout: 'vertical',
+                floating: true,
             },
-            series: data
+            series: data,
         };
         $("#container").highcharts(chart_config);
     }

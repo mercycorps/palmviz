@@ -1,4 +1,6 @@
 from django.views.generic import TemplateView
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework import response, schemas
@@ -19,10 +21,6 @@ class HomeView(TemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         context['home'] = 'active_tab'
         return context
-
-
-from django.shortcuts import render_to_response
-from django.template import RequestContext
 
 
 def handler404(request):
