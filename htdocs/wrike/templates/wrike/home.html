@@ -7,11 +7,11 @@
 
 {% block content %}
     <div class="row">
-        <div class="panel panel-info">
-            <div class="panel-heading">
-                <h3 class="panel-title">Completion Date Range Filter</h3>
+        <div class="panel panel-info" style="margin-bottom:5px;">
+            <div class="panel-heading" style="padding: 5px 15px;">
+                <h3 class="panel-title" style="font-size:14px;">Completion Date Range Filter</h3>
             </div>
-            <div class="panel-body">
+            <div class="panel-body" style="padding: 5px;">
                 <form class="form-inline" id="date_range_form" method="POST">
                     {% csrf_token %}
                     <div class="form-group">
@@ -29,7 +29,7 @@
     </div>
 
 
-    <div id="container" class="row"></div>
+    <div id="container" class="row" style="height: calc(100vh - 205px);"></div>
     <div id="categories" style="display: none;">{{ categories }}</div>
     <div id="data" style="display: none;">{{ data }}</div>
 {% endblock content %}
@@ -60,7 +60,6 @@
         var chart_config = {
             chart: {
                 type: 'bar',
-                height:600,
                 borderColor: '#EBBA95',
                 borderWidth: 1,
             },
