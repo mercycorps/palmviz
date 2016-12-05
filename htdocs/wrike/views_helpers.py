@@ -51,6 +51,21 @@ def get_support_data_by_person(criteria):
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
+    # Get number of shipping_n_logistics projects by person:
+    shipping_n_logistics_projects = Contact.objects.filter(\
+            Q(projects__parents__id=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_SHIPPING_LOGISTICS_ARCHIVE_FOLDER_ID))\
+        .annotate(total=Count('projects'), assignee=F('firstName'))\
+        .values('total', 'assignee')
+
+    # Get number of Tender projects by person:
+    tender_projects = Contact.objects.filter(\
+            Q(projects__parents__id=settings.WRIKE_PALM_TENDERS_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_TENDERS_ARCHIVE_FOLDER_ID))\
+        .annotate(total=Count('projects'), assignee=F('firstName'))\
+        .values('total', 'assignee')
+
+
     # dictionary to hold data in the format expected by the hicharts stacked bar chart
     data = {}
     for t in gen_tasks:
@@ -87,8 +102,20 @@ def get_support_data_by_person(criteria):
             data[person] = {}
         data[person]["field_trip"] = f['total']
 
+    for s in shipping_n_logistics_projects:
+        person = s['assignee']
+        if data.get(person, None) is None:
+            data[person] = {}
+        data[person]["snl"] = s['total']
+
+    for t in tender_projects:
+        person = t['assignee']
+        if data.get(person, None) is None:
+            data[person] = {}
+        data[person]["tender"] = t['total']
+
     # sort data by person
-    sorted_data = sorted(data.items(), key=operator.itemgetter(1))
+    sorted_data = sorted(data.items(), key=operator.itemgetter(0), reverse=True)
 
 
     y_axis_labels = []
@@ -98,6 +125,8 @@ def get_support_data_by_person(criteria):
     tdy_list = []
     agency_response_list = []
     field_trip_list = []
+    shipping_n_logistics_list = []
+    tender_list = []
 
     for bar in sorted_data:
         person = bar[0]
@@ -109,6 +138,8 @@ def get_support_data_by_person(criteria):
         tdy_list.append(series_names.get("tdy", "0"))
         agency_response_list.append(series_names.get("agency_response", "0"))
         field_trip_list.append(series_names.get("field_trip", "0"))
+        shipping_n_logistics_list.append(series_names.get("snl", "0"))
+        tender_list.append(series_names.get("tender", "0"))
 
     series = [
         {"name": "General Tech Support", "data": gen_tech_list},
@@ -117,6 +148,8 @@ def get_support_data_by_person(criteria):
         {"name": "Short-Term TDY", "data": tdy_list},
         {"name": "Agency Response", "data": agency_response_list},
         {"name": "Field Trip", "data": field_trip_list},
+        {"name": "Shipping and Logistics", "data": shipping_n_logistics_list},
+        {"name": "Tender", "data": tender_list},
     ]
     return (y_axis_labels, series)
 
