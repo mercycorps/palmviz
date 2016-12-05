@@ -44,6 +44,12 @@ def get_support_data_by_person(criteria):
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
+    # Get number of field_trips projects by person:
+    field_trip_projects = Contact.objects.filter(\
+            Q(projects__parents__id=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_FIELD_TRIPS_ARCHIVE_FOLDER_ID))\
+        .annotate(total=Count('projects'), assignee=F('firstName'))\
+        .values('total', 'assignee')
 
     # dictionary to hold data in the format expected by the hicharts stacked bar chart
     data = {}
@@ -75,6 +81,12 @@ def get_support_data_by_person(criteria):
             data[person] = {}
         data[person]["agency_response"] = r['total']
 
+    for f in field_trip_projects:
+        person = f['assignee']
+        if data.get(person, None) is None:
+            data[person] = {}
+        data[person]["field_trip"] = f['total']
+
     # sort data by person
     sorted_data = sorted(data.items(), key=operator.itemgetter(1))
 
@@ -85,6 +97,7 @@ def get_support_data_by_person(criteria):
     material_aid_list = []
     tdy_list = []
     agency_response_list = []
+    field_trip_list = []
 
     for bar in sorted_data:
         person = bar[0]
@@ -95,6 +108,7 @@ def get_support_data_by_person(criteria):
         material_aid_list.append(series_names.get("mataid", "0"))
         tdy_list.append(series_names.get("tdy", "0"))
         agency_response_list.append(series_names.get("agency_response", "0"))
+        field_trip_list.append(series_names.get("field_trip", "0"))
 
     series = [
         {"name": "General Tech Support", "data": gen_tech_list},
@@ -102,6 +116,7 @@ def get_support_data_by_person(criteria):
         {"name": "Material Aid", "data": material_aid_list},
         {"name": "Short-Term TDY", "data": tdy_list},
         {"name": "Agency Response", "data": agency_response_list},
+        {"name": "Field Trip", "data": field_trip_list},
     ]
     return (y_axis_labels, series)
 
