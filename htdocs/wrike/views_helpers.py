@@ -37,6 +37,13 @@ def get_support_data_by_person(criteria):
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
+    # Get number of agency_response projects by person:
+    agency_response_projects = Contact.objects.filter(\
+            Q(projects__parents__id=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_AGENCY_RESPONSE_ARCHIVE_FOLDER_ID))\
+        .annotate(total=Count('projects'), assignee=F('firstName'))\
+        .values('total', 'assignee')
+
 
     # dictionary to hold data in the format expected by the hicharts stacked bar chart
     data = {}
@@ -62,6 +69,12 @@ def get_support_data_by_person(criteria):
             data[person] = {}
         data[person]["tdy"] = t['total']
 
+    for r in agency_response_projects:
+        person = r['assignee']
+        if data.get(person, None) is None:
+            data[person] = {}
+        data[person]["agency_response"] = r['total']
+
     # sort data by person
     sorted_data = sorted(data.items(), key=operator.itemgetter(1))
 
@@ -71,6 +84,7 @@ def get_support_data_by_person(criteria):
     recruitments_list = []
     material_aid_list = []
     tdy_list = []
+    agency_response_list = []
 
     for bar in sorted_data:
         person = bar[0]
@@ -80,12 +94,14 @@ def get_support_data_by_person(criteria):
         recruitments_list.append(series_names.get("recruitment", "0"))
         material_aid_list.append(series_names.get("mataid", "0"))
         tdy_list.append(series_names.get("tdy", "0"))
+        agency_response_list.append(series_names.get("agency_response", "0"))
 
     series = [
         {"name": "General Tech Support", "data": gen_tech_list},
         {"name": "Recruitment", "data": recruitments_list},
         {"name": "Material Aid", "data": material_aid_list},
         {"name": "Short-Term TDY", "data": tdy_list},
+        {"name": "Agency Response", "data": agency_response_list},
     ]
     return (y_axis_labels, series)
 
