@@ -12,6 +12,7 @@ urlpatterns = [
     url(r'^oauth2_redirect/$', WrikeOauthRedirectUriStep2.as_view(), name='oauth2redirect'),
     url(r'^support_by_country/$', SupportByCountry.as_view(), name='support_by_country'),
     url(r'^support_by_region/$', SupportByRegion.as_view(), name='support_by_region'),
+    url(r'^support_by_person/$', SupportCompletedByPerson.as_view(), name='support_by_person'),
     #url(r'^pr/edit/(?P<pk>\d+)/$', PurchaseRequestUpdateView.as_view(), name='pr_edit'),
 ]
 

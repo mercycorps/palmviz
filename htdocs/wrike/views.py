@@ -17,6 +17,16 @@ from .views_helpers import *
 
 logger = logging.getLogger(__name__)
 
+class SupportCompletedByPerson(TemplateView):
+    template_name='wrike/home.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(SupportCompletedByPerson, self).get_context_data(**kwargs)
+        data = get_support_data_by_person(None)
+        context['categories'] = json.dumps(data[0])
+        context['data'] = json.dumps(data[1])
+        return context
+
 
 class SupportByRegion(TemplateView):
     template_name = 'wrike/home.html'

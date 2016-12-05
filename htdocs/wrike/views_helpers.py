@@ -5,6 +5,25 @@ from django.conf import settings
 
 from .models import *
 
+
+def get_support_data_by_person(criteria):
+    filtering = {'tasks__folders__id': settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID}
+    #persons = Contact.objects.filter(**filtering).distinct().values('firstName')
+    tasks = Contact.objects.filter(**filtering)\
+                .distinct()\
+                .annotate(total=Count('tasks'), assignee=F('firstName'))\
+                .values('total', 'assignee')
+
+
+    categories = []
+    data = []
+    for t in tasks:
+        categories.append(t['assignee'])
+        data.append(t['total'])
+
+    series = [ {"name": "General Tech Support", "data": data},]
+    return (categories, series)
+
 def get_support_data_by_region(criteria):
     parent_folder_id = settings.WRIKE_PALM_RPD_PORTFOLIOS_FOLDER_ID
     gen_tech_tasks = get_palm_general_tech_support_by_countries(parent_folder_id, criteria)
