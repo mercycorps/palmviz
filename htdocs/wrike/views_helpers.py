@@ -14,15 +14,44 @@ def get_support_data_by_person(criteria):
                 .annotate(total=Count('tasks'), assignee=F('firstName'))\
                 .values('total', 'assignee')
 
+    # Get recruiments by person completed:
+    recruitments = Contact.objects.filter(\
+            Q(projects__parents__id=settings.WRIKE_PALM_RECRUITING_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_RECRUITMENT_ARCHIVE_FOLDER_ID))\
+        .annotate(total=Count('projects'), assignee=F('firstName'))\
+        .values('total', 'assignee')
 
-    categories = []
-    data = []
+    data = {}
     for t in tasks:
-        categories.append(t['assignee'])
-        data.append(t['total'])
+        person = t['assignee']
+        data[person] = {"gen_tech": t['total']}
 
-    series = [ {"name": "General Tech Support", "data": data},]
-    return (categories, series)
+    for r in recruitments:
+        person = r['assignee']
+        if data.get(person, None) is None:
+            data[person] = {}
+        data[person]["recruitment"] = r['total']
+
+    # sort data by person
+    sorted_data = sorted(data.items(), key=operator.itemgetter(1))
+
+
+    y_axis_labels = []
+    gen_tech_list = []
+    recruitments_list = []
+
+    for bar in sorted_data:
+        person = bar[0]
+        y_axis_labels.append(person)
+        series_names = bar[1]
+        gen_tech_list.append(series_names.get("gen_tech", "0"))
+        recruitments_list.append(series_names.get("recruitment", "0"))
+
+    series = [
+        {"name": "General Tech Support", "data": gen_tech_list},
+        {"name": "Recruitments", "data": recruitments_list},
+    ]
+    return (y_axis_labels, series)
 
 def get_support_data_by_region(criteria):
     parent_folder_id = settings.WRIKE_PALM_RPD_PORTFOLIOS_FOLDER_ID
