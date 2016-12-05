@@ -8,29 +8,45 @@ from .models import *
 
 def get_support_data_by_person(criteria):
     filtering = {'tasks__folders__id': settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID}
-    #persons = Contact.objects.filter(**filtering).distinct().values('firstName')
-    tasks = Contact.objects.filter(**filtering)\
+
+    # Get number of general_tech_support_requests by person
+    gen_tasks = Contact.objects.filter(**filtering)\
                 .distinct()\
                 .annotate(total=Count('tasks'), assignee=F('firstName'))\
                 .values('total', 'assignee')
 
-    # Get recruiments by person completed:
-    recruitments = Contact.objects.filter(\
+    # Get number of recruiments by person completed:
+    recruitment_projects = Contact.objects.filter(\
             Q(projects__parents__id=settings.WRIKE_PALM_RECRUITING_FOLDER_ID)|\
             Q(projects__parents__id=settings.WRIKE_PALM_RECRUITMENT_ARCHIVE_FOLDER_ID))\
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
+
+    # Get number of material_aid projects by person:
+    material_aid_projects = Contact.objects.filter(\
+            Q(projects__parents__id=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_MATERIAL_AID_ARCHIVE_FOLDER_ID))\
+        .annotate(total=Count('projects'), assignee=F('firstName'))\
+        .values('total', 'assignee')
+
+    # dictionary to hold data in the format expected by the hicharts stacked bar chart
     data = {}
-    for t in tasks:
+    for t in gen_tasks:
         person = t['assignee']
         data[person] = {"gen_tech": t['total']}
 
-    for r in recruitments:
+    for r in recruitment_projects:
         person = r['assignee']
         if data.get(person, None) is None:
             data[person] = {}
         data[person]["recruitment"] = r['total']
+
+    for m in material_aid_projects:
+        person = m['assignee']
+        if data.get(person, None) is None:
+            data[person] = {}
+        data[person]["mataid"] = m['total']
 
     # sort data by person
     sorted_data = sorted(data.items(), key=operator.itemgetter(1))
@@ -39,6 +55,7 @@ def get_support_data_by_person(criteria):
     y_axis_labels = []
     gen_tech_list = []
     recruitments_list = []
+    material_aid_list = []
 
     for bar in sorted_data:
         person = bar[0]
@@ -46,10 +63,12 @@ def get_support_data_by_person(criteria):
         series_names = bar[1]
         gen_tech_list.append(series_names.get("gen_tech", "0"))
         recruitments_list.append(series_names.get("recruitment", "0"))
+        material_aid_list.append(series_names.get("mataid", "0"))
 
     series = [
         {"name": "General Tech Support", "data": gen_tech_list},
-        {"name": "Recruitments", "data": recruitments_list},
+        {"name": "Recruitment", "data": recruitments_list},
+        {"name": "Material Aid", "data": material_aid_list},
     ]
     return (y_axis_labels, series)
 
