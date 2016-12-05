@@ -14,6 +14,6 @@ class Command(BaseCommand):
         pass
 
     def handle(self, *args, **options):
-        if utils.process_wrike_data() == False
+        if utils.process_wrike_data() == False:
             #send out an email
             pass
