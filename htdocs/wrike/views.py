@@ -14,27 +14,12 @@ from django.contrib import messages
 
 from .models import WrikeOauth2Credentials
 from .views_helpers import *
+from .mixins import FilterMixin
 
 logger = logging.getLogger(__name__)
 
-class SupportCompletedByPerson(TemplateView):
+class SupportCompletedByPerson(FilterMixin, TemplateView):
     template_name='wrike/home.html'
-
-
-    def post(self, request, *args, **kwargs):
-        start = request.POST.get("start", None)
-        end = request.POST.get("end", None)
-
-        if start:
-            start_date = datetime.strptime(start, "%Y-%m-%d")
-            start = start_date.replace(tzinfo=pytz.UTC)
-        if end:
-            end_date = datetime.strptime(end, "%Y-%m-%d")
-            end = end_date.replace(tzinfo=pytz.UTC)
-
-        kwargs['criteria'] = {'start': start, 'end': end}
-        context = self.get_context_data(**kwargs)
-        return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
         context = super(SupportCompletedByPerson, self).get_context_data(**kwargs)
@@ -48,23 +33,8 @@ class SupportCompletedByPerson(TemplateView):
         return context
 
 
-class SupportByRegion(TemplateView):
+class SupportByRegion(FilterMixin, TemplateView):
     template_name = 'wrike/home.html'
-
-    def post(self, request, *args, **kwargs):
-        start = request.POST.get("start", None)
-        end = request.POST.get("end", None)
-
-        if start:
-            start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
-            start = start_date.replace(tzinfo=pytz.UTC)
-        if end:
-            end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
-            end = end_date.replace(tzinfo=pytz.UTC)
-
-        kwargs['criteria'] = {'start': start, 'end': end}
-        context = self.get_context_data(**kwargs)
-        return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
         context = super(SupportByRegion, self).get_context_data(**kwargs)
@@ -78,23 +48,8 @@ class SupportByRegion(TemplateView):
         return context
 
 
-class SupportByCountry(TemplateView):
+class SupportByCountry(FilterMixin, TemplateView):
     template_name = 'wrike/home.html'
-
-    def post(self, request, *args, **kwargs):
-        start = request.POST.get("start", None)
-        end = request.POST.get("end", None)
-
-        if start:
-            start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
-            start = start_date.replace(tzinfo=pytz.UTC)
-        if end:
-            end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
-            end = end_date.replace(tzinfo=pytz.UTC)
-
-        kwargs['criteria'] = {'start': start, 'end': end}
-        context = self.get_context_data(**kwargs)
-        return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
         context = super(SupportByCountry, self).get_context_data(**kwargs)
