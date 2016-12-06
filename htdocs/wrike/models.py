@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-import datetime, time
+from datetime import datetime, time
 
 from django.db import models
 
@@ -34,7 +34,7 @@ class BaseModel(models.Model):
         abstract = True
 
     def save(self, *args, **kwargs):
-        now_utc = datetime.datetime.utcnow().replace(tzinfo=utc)
+        now_utc = datetime.utcnow().replace(tzinfo=utc)
         if self.created:
             self.updated = now_utc
         super(BaseModel, self).save(*args, **kwargs)

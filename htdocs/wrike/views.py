@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import pytz
 import requests
 import json
@@ -20,9 +20,29 @@ logger = logging.getLogger(__name__)
 class SupportCompletedByPerson(TemplateView):
     template_name='wrike/home.html'
 
+
+    def post(self, request, *args, **kwargs):
+        start = request.POST.get("start", None)
+        end = request.POST.get("end", None)
+
+        if start:
+            start_date = datetime.strptime(start, "%Y-%m-%d")
+            start = start_date.replace(tzinfo=pytz.UTC)
+        if end:
+            end_date = datetime.strptime(end, "%Y-%m-%d")
+            end = end_date.replace(tzinfo=pytz.UTC)
+
+        kwargs['criteria'] = {'start': start, 'end': end}
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
     def get_context_data(self, **kwargs):
         context = super(SupportCompletedByPerson, self).get_context_data(**kwargs)
-        data = get_support_data_by_person(None)
+        context['start_date'] = self.request.POST.get("start", '')
+        context['end_date'] = self.request.POST.get("end", '')
+
+        criteria = kwargs.get('criteria', {})
+        data = get_support_data_by_person(criteria)
         context['categories'] = json.dumps(data[0])
         context['data'] = json.dumps(data[1])
         return context

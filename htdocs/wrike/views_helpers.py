@@ -1,19 +1,41 @@
 import operator
-
+import pytz
+from datetime import datetime
 from django.db.models import Q, Count, F, FloatField, Sum
 from django.conf import settings
 
-from .models import *
+from .models import Contact, Folder, Task
 
 
 def get_support_data_by_person(criteria):
     filtering = {'tasks__folders__id': settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID}
+    filters = get_completed_date_filter("projects__", criteria)
 
     # Get number of general_tech_support_requests by person
+    """
     gen_tasks = Contact.objects.filter(**filtering)\
                 .distinct()\
+                .filter(**filters)\
                 .annotate(total=Count('tasks'), assignee=F('firstName'))\
                 .values('total', 'assignee')
+    """
+    now = datetime.now(pytz.utc)
+    raw_sql = """SELECT DISTINCT c.id, c.firstName AS 'name', COUNT(ta.task_id) AS `total`
+                    FROM wrike_contact c
+                    INNER JOIN wrike_task_assignees ta ON (c.id = ta.contact_id)
+                    INNER JOIN wrike_task t ON (ta.task_id = t.id)
+                    INNER JOIN wrike_task_folders tf ON (t.id = tf.task_id)
+                    WHERE (tf.folder_id = '%s'
+                        AND t.completedDate >= '%s'
+                        AND t.completedDate <= '%s')
+                    GROUP BY c.id
+                    ORDER BY 'name'""" % (
+                        settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID,
+                        criteria.get('start', ''),
+                        criteria.get('end', now),
+                        )
+
+    gen_tasks = Contact.objects.raw(raw_sql)
 
     # Get number of recruiments by person completed:
     recruitment_projects = Contact.objects.filter(\
@@ -69,8 +91,8 @@ def get_support_data_by_person(criteria):
     # dictionary to hold data in the format expected by the hicharts stacked bar chart
     data = {}
     for t in gen_tasks:
-        person = t['assignee']
-        data[person] = {"gen_tech": t['total']}
+        person = t.name
+        data[person] = {"gen_tech": t.total}
 
     for r in recruitment_projects:
         person = r['assignee']
