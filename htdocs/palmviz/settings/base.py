@@ -128,8 +128,8 @@ STATICFILES_DIRS = (
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR + "/assets/"
+STATIC_URL = '/assets/'
+STATIC_ROOT = BASE_DIR + STATIC_URL
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
