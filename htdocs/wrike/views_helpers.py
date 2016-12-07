@@ -8,82 +8,70 @@ from .models import Contact, Folder, Task
 
 
 def get_support_data_by_person(criteria):
-    filtering = {'tasks__folders__id': settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID}
-    filters = get_completed_date_filter("projects__", criteria)
+    filters = get_completed_date_filter("tasks__", criteria)
+    filtering = {'tasks__folders__id': settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID }
+    filtering.update(filters)
 
     # Get number of general_tech_support_requests by person
-    """
     gen_tasks = Contact.objects.filter(**filtering)\
                 .distinct()\
-                .filter(**filters)\
                 .annotate(total=Count('tasks'), assignee=F('firstName'))\
                 .values('total', 'assignee')
-    """
-    now = datetime.now(pytz.utc)
-    raw_sql = """SELECT DISTINCT c.id, c.firstName AS 'name', COUNT(ta.task_id) AS `total`
-                    FROM wrike_contact c
-                    INNER JOIN wrike_task_assignees ta ON (c.id = ta.contact_id)
-                    INNER JOIN wrike_task t ON (ta.task_id = t.id)
-                    INNER JOIN wrike_task_folders tf ON (t.id = tf.task_id)
-                    WHERE (tf.folder_id = '%s'
-                        AND t.completedDate >= '%s'
-                        AND t.completedDate <= '%s')
-                    GROUP BY c.id
-                    ORDER BY 'name'""" % (
-                        settings.WRIKE_PALM_GENERAL_TECH_SUPPORT_FOLDER_ID,
-                        criteria.get('start', ''),
-                        criteria.get('end', now),
-                        )
 
-    gen_tasks = Contact.objects.raw(raw_sql)
-
+    filters = get_completed_date_filter("projects__", criteria)
     # Get number of recruiments by person completed:
     recruitment_projects = Contact.objects.filter(\
-            Q(projects__parents__id=settings.WRIKE_PALM_RECRUITING_FOLDER_ID)|\
-            Q(projects__parents__id=settings.WRIKE_PALM_RECRUITMENT_ARCHIVE_FOLDER_ID))\
+            (Q(projects__parents__id=settings.WRIKE_PALM_RECRUITING_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_RECRUITMENT_ARCHIVE_FOLDER_ID))&
+            Q(**filters))\
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
-
     # Get number of material_aid projects by person:
     material_aid_projects = Contact.objects.filter(\
-            Q(projects__parents__id=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)|\
-            Q(projects__parents__id=settings.WRIKE_PALM_MATERIAL_AID_ARCHIVE_FOLDER_ID))\
+            (Q(projects__parents__id=settings.WRIKE_PALM_MATERIAL_AID_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_MATERIAL_AID_ARCHIVE_FOLDER_ID))&\
+            Q(**filters))\
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
     # Get number of short_term_tdy projects by person:
     tdy_projects = Contact.objects.filter(\
-            Q(projects__parents__id=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID)|\
-            Q(projects__parents__id=settings.WRIKE_PALM_SHORT_TERM_TDY_ARCHIVE_FOLDER_ID))\
+            (Q(projects__parents__id=settings.WRIKE_PALM_SHORT_TERM_TDY_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_SHORT_TERM_TDY_ARCHIVE_FOLDER_ID))&\
+            Q(**filters))\
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
     # Get number of agency_response projects by person:
     agency_response_projects = Contact.objects.filter(\
-            Q(projects__parents__id=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)|\
-            Q(projects__parents__id=settings.WRIKE_PALM_AGENCY_RESPONSE_ARCHIVE_FOLDER_ID))\
+            (Q(projects__parents__id=settings.WRIKE_PALM_AGENCY_RESPONSE_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_AGENCY_RESPONSE_ARCHIVE_FOLDER_ID))&\
+            Q(**filters))\
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
     # Get number of field_trips projects by person:
     field_trip_projects = Contact.objects.filter(\
-            Q(projects__parents__id=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID)|\
-            Q(projects__parents__id=settings.WRIKE_PALM_FIELD_TRIPS_ARCHIVE_FOLDER_ID))\
+            (Q(projects__parents__id=settings.WRIKE_PALM_FILED_TRIPS_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_FIELD_TRIPS_ARCHIVE_FOLDER_ID))&
+            Q(**filters))\
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
     # Get number of shipping_n_logistics projects by person:
     shipping_n_logistics_projects = Contact.objects.filter(\
-            Q(projects__parents__id=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)|\
-            Q(projects__parents__id=settings.WRIKE_PALM_SHIPPING_LOGISTICS_ARCHIVE_FOLDER_ID))\
+            (Q(projects__parents__id=settings.WRIKE_PALM_SHIPPING_LOGISTICS_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_SHIPPING_LOGISTICS_ARCHIVE_FOLDER_ID))&\
+            Q(**filters))\
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
     # Get number of Tender projects by person:
     tender_projects = Contact.objects.filter(\
-            Q(projects__parents__id=settings.WRIKE_PALM_TENDERS_FOLDER_ID)|\
-            Q(projects__parents__id=settings.WRIKE_PALM_TENDERS_ARCHIVE_FOLDER_ID))\
+            (Q(projects__parents__id=settings.WRIKE_PALM_TENDERS_FOLDER_ID)|\
+            Q(projects__parents__id=settings.WRIKE_PALM_TENDERS_ARCHIVE_FOLDER_ID))&\
+            Q(**filters))\
         .annotate(total=Count('projects'), assignee=F('firstName'))\
         .values('total', 'assignee')
 
@@ -91,8 +79,8 @@ def get_support_data_by_person(criteria):
     # dictionary to hold data in the format expected by the hicharts stacked bar chart
     data = {}
     for t in gen_tasks:
-        person = t.name
-        data[person] = {"gen_tech": t.total}
+        person = t['assignee']
+        data[person] = {"gen_tech": t['total']}
 
     for r in recruitment_projects:
         person = r['assignee']
