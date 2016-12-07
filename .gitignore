@@ -33,6 +33,7 @@ djangocosign/
 feedback/
 
 # ignore static files folders
+htdocs/palmviz/assets/
 htdocs/palmwiz/static/admin/*
 htdocs/palmwiz/fixtures/*
 htdocs/palmwiz/static/epro/*
