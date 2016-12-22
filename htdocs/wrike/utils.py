@@ -62,16 +62,16 @@ def get_model_fields_names(model_name):
 
 def process_wrike_data():
     if process_wrike_custom_fields() == False:
-        mail_logger.error("notifiy adming")
+        mail_logger.error("Wrike Custom Fields Fetch and Processing Failed")
 
     if process_wrike_contacts() == False:
-        mail_logger.error("notify admins")
+        mail_logger.error("Wrike Contacts Fetch and processing failed")
 
     if process_wrike_folders() == False:
-        mail_logger.error("notifiy admins")
+        mail_logger.error("Wrike Folders Fetch and processing failed")
 
     if process_wrike_tasks() == False:
-        mail_logger.error("notify admins")
+        mail_logger.error("Wrike Tasks Fetch and processing failed")
 
 
 def process_wrike_custom_fields():
