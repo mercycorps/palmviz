@@ -6,7 +6,7 @@ class Command(BaseCommand):
     """
     Usage: python manage.py get_palm_wrike_data
     """
-    help = 'Fetches PALM Wrike data under "PALM Support" folder'
+    help = 'Fetches GSC Wrike data under "PALM Support" folder'
 
     def add_arguments(self, parser):
         #parser.add_argument("-u", "--username", type=str, required=True)
